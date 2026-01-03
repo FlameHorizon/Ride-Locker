@@ -1,0 +1,248 @@
+@page "/summary"
+
+@using Microsoft.EntityFrameworkCore
+@using Website.Data
+@using Website.Models
+@using Website.Components.Pieces
+@using System.Diagnostics
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+
+@* @using ValueType = Syncfusion.Blazor.Charts.ValueType *@
+@* 
+  I think, I'm a bit too stupid yet to use pre-render pass effectively
+  so, I'm disabling it for now. More on pre-render pass for interactive components
+  https://learn.microsoft.com/en-us/aspnet/core/blazor/components/prerender?view=aspnetcore-10.0
+
+  There is also documentation for peristance of state when doing pre-render pass
+  https://learn.microsoft.com/en-us/aspnet/core/blazor/state-management/prerendered-state-persistence?view=aspnetcore-10.0
+*@
+@rendermode @(new InteractiveServerRenderMode(false))
+@* @inject IWebHostEnvironment Env *@
+
+<PageTitle>Core Metrics</PageTitle>
+
+<h1>Core Metrics</h1>
+
+<h2>Overall</h2>
+
+@*
+  The main problem here is that every time I'm calculcating new metrics
+  all GPX files are read. This casues around 13 reads of 31 files each.
+*@
+
+<div class="container">
+  <div class="row mb-2">
+
+    <RideDetailCard Title="Total distance"
+                    Text="@(Math.Round(_rides.Sum(x => x.Distance), 2) + " km")"/>
+
+    <RideDetailCard Title="Total driving time"
+                    Text="@(SumDurations(_rides).ToString())"/>
+
+  </div>
+
+  <div class="row mb-2">
+
+    <RideDetailCard Title="Average trip duration"
+                    Text="@GetAverageTripDuration()"/>
+
+    <RideDetailCard Title="Elevation gain/loss (m)"
+                    Text="@(Math.Round(_rides.Sum(x => x.ElevationGain), 2) + "/" + Math.Round(_rides.Sum(x => x.ElevationLoss), 2))"/>
+
+  </div>
+
+  <div class="row mb-2">
+
+    <RideDetailCard Title="Average speed"
+                    Text="@GetAverageSpeed()"/>
+
+    <RideDetailCard Title="Max speed"
+                    Text="@GetMaxSpeed()"
+    />
+
+  </div>
+</div>
+
+
+<h2>Advanced/Analytical Metrics</h2>
+<div class="container">
+  <div class="row mb-2">
+
+    <RideDetailCard Title="Harsh acceleration/breaking count"
+                    Text="@(_rides.Sum(x => x.FastAccelerationCount) + "/" + _rides.Sum(x => x.FastDecelerationCount))"/>
+
+  </div>
+
+  @* <div class="row mb-2">
+    <div class="col-sm-12 mb-3 mb-sm-0">
+      <div class="card">
+        <div class="card-body">
+          <div style="height:400px">
+            <SfChart Title="Speed distribution">
+              <ChartArea>
+                <ChartAreaBorder Width="0"/>
+              </ChartArea>
+
+              <ChartPrimaryXAxis Minimum="0">
+                <ChartAxisMajorGridLines Width="0"/>
+              </ChartPrimaryXAxis>
+
+              <ChartPrimaryYAxis Minimum="0"
+                                 Title="Time (s)">
+                <ChartAxisMajorGridLines Width="0"/>
+              </ChartPrimaryYAxis>
+
+              <ChartSeriesCollection>
+                <ChartSeries DataSource="@_speedDistributionData"
+                             YName="XValue"
+                             Type="ChartSeriesType.Histogram"
+                             BinInterval="10"
+                             ColumnWidth="0.90">
+
+                  <ChartMarker Visible="false">
+                    <ChartDataLabel Visible="true"/>
+                  </ChartMarker>
+
+                </ChartSeries>
+              </ChartSeriesCollection>
+
+              <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+            </SfChart>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="row mb-2">
+    <div class="col-sm-12 mb-3 mb-sm-0">
+      <div class="card">
+        <div class="card-body">
+          <div style="height:400px">
+            <SfChart Title="Distance over months">
+              <ChartPrimaryXAxis Title="Year and month" ValueType="ValueType.Category"/>
+              <ChartPrimaryYAxis Title="Distance (km)"/>
+              <ChartTooltipSettings Enable="true"/>
+
+              <ChartSeriesCollection>
+                <ChartSeries DataSource="@_distanceOverMonthsData"
+                             XName="XValue"
+                             YName="YValue"
+                             Type="ChartSeriesType.Column">
+                  <ChartSeriesAnimation Enable="false" Duration="0"/>
+                </ChartSeries>
+              </ChartSeriesCollection>
+            </SfChart>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-2">
+    <div class="col-sm-12 mb-3 mb-sm-0">
+      <div class="card">
+        <div class="card-body">
+          <div style="height:400px">
+            <SfChart Title="Average speed over months">
+              <ChartPrimaryXAxis Title="Year and month" ValueType="ValueType.Category"/>
+              <ChartPrimaryYAxis Title="Speed (km/h)"/>
+              <ChartTooltipSettings Enable="true"/>
+
+              <ChartSeriesCollection>
+                <ChartSeries DataSource="@_speedOverMonthsData"
+                             XName="XValue"
+                             YName="YValue"
+                             Type="ChartSeriesType.Column">
+                  <ChartSeriesAnimation Enable="false" Duration="0"/>
+                </ChartSeries>
+              </ChartSeriesCollection>
+            </SfChart>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div> *@
+</div>
+
+
+@code {
+  private List<Ride> _rides = [];
+  private List<TrackPoint> _tracks = [];
+
+//  private IEnumerable<ChartData<string, double>> _distanceOverMonthsData = [];
+//  private IEnumerable<ChartData<string, double>> _speedOverMonthsData = [];
+//  private IEnumerable<ChartData<double>> _speedDistributionData = [];
+
+  protected override async Task OnInitializedAsync() {
+    // This method will be called once since pre-render is disabled.
+    // When pre-render is disabled, page will flicker on reload.
+    await using AppDbContext db = await DbContextFactory.CreateDbContextAsync();
+    _rides = db.Rides
+      .AsNoTracking()
+      .Include(x => x.TrackPoints)
+      .ToList();
+
+    _tracks = _rides.SelectMany(x => x.TrackPoints).ToList();
+//    CreateSpeedHistogramData().ToList();
+//    _distanceOverMonthsData = CreateDistanceOverMonthsData();
+//    _speedOverMonthsData = CreateSpeedOverMonthData();
+//    _speedDistributionData = CreateSpeedDistributionData();
+  }
+
+  // Unfortunately, there isn't a an overload of Sum that accepts an
+  // IEnumerable<TimeSpan>. Additionally, there's no current way of
+  // specifying operator-based generic constraints for type-parameters,
+  // so even though TimeSpan is "natively" summable, that fact can't be
+  // picked up easily by generic code.
+  private static TimeSpan SumDurations(List<Ride> rides) {
+    return rides.Select(x => x.Duration)
+      .Aggregate(TimeSpan.Zero, (t1, t2) => t1 + t2);
+  }
+
+  // Since histogram can't be created from rides themselves,
+  // I need to again look into all GPX files to get all required
+  // details.
+//  private IEnumerable<ChartData<double, double>> CreateSpeedHistogramData() {
+//    return Charts.CreateSpeedHistogramData(_tracks);
+//  }
+//
+//  private IEnumerable<ChartData<string, double>> CreateDistanceOverMonthsData() {
+//    return Charts.CreateDistanceOverMonthsData(_tracks);
+//  }
+//
+//  private IEnumerable<ChartData<string, double>> CreateSpeedOverMonthData() {
+//    return Charts.CreateSpeedOverMonthData(_tracks);
+//  }
+//
+//  private IEnumerable<ChartData<double>> CreateSpeedDistributionData() {
+//    return Charts.CreateSpeedDistributionData(_tracks);
+//  }
+
+  private string GetAverageTripDuration() {
+    if (_rides.Count == 0) {
+      return "0 minutes";
+    }
+
+    return Math.Round(_rides.Average(x => x.Duration.TotalMinutes), 2) + " minutes";
+  }
+
+  private string GetAverageSpeed() {
+    if (_rides.Count == 0) {
+      return "0 km/h";
+    }
+
+    return Math.Round(_rides.Average(x => x.AvgSpeed), 2) + " km/h";
+  }
+
+  private string GetMaxSpeed() {
+    if (_rides.Count == 0) {
+      return "0 km/h";
+    }
+
+    return Math.Round(_rides.Max(x => x.MaxSpeed), 2) + " km/h";
+  }
+
+}
