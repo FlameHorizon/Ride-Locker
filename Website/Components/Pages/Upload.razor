@@ -1,11 +1,11 @@
 @page "/upload"
 @rendermode InteractiveServer
 
+@using Website.Data
+@using Website.Models
 @using System.Xml.Serialization
 @using Microsoft.EntityFrameworkCore
 @using System.Diagnostics
-@using Website.Data
-@using Website.Models
 
 @inject ILogger<Upload> Logger
 @inject IDbContextFactory<AppDbContext> DbContextFactory
@@ -15,7 +15,8 @@
 
 <InputFile OnChange="LoadFiles" multiple accept=".gpx" />
 
-@if (_done) {
+@if (_done)
+{
   <p>Done</p>
 }
 
@@ -76,39 +77,51 @@
         return;
       }
 
-      // TODO: GPX file has to be converted into Ride object.
-      List<Trkpt> trackPoints = gpx.Trk.Trkseg.Trkpt;
+      List<TrackPoint> trackPoints = new List<TrackPoint>(gpx.Trk.Trkseg.Trkpt.Count);
+      foreach (Trkpt trk in gpx.Trk.Trkseg.Trkpt)
+      {
+        trackPoints.Add(new TrackPoint()
+        {
+          Elevation = trk.Ele,
+          Hdop = trk.Hdop,
+          Latitude = trk.Lat,
+          Longitude = trk.Lon,
+          Speed = trk.Extensions is null ? 0 : trk.Extensions.Speed,
+          Time = trk.Time
+        });
+      }
 
       int trackPointCount = trackPoints.Count;
+
       DateTime start = trackPoints[0].Time;
       DateTime end = trackPoints[trackPointCount - 1].Time;
 
       double elevationGain = 0.0d;
-      double elevationLoss = trackPoints[0].Ele;
-      double elePrev = trackPoints[0].Ele;
+      double elevationLoss = trackPoints[0].Elevation;
+      double elePrev = trackPoints[0].Elevation;
       double maxSpeed = double.MinValue;
 
-      double latPrev = trackPoints[0].Lat;
-      double lonPrev = trackPoints[0].Lon;
+      double latPrev = trackPoints[0].Latitude;
+      double lonPrev = trackPoints[0].Longitude;
       double distance = 0.0d;
 
       int fastAccelerationCount = 0;
       int fastDecelerationCount = 0;
       DateTime dtPrev = trackPoints[0].Time;
       // NOTE: First value might be also null.
-      double? speedPrev = trackPoints[0].Extensions?.Speed;
+      double? speedPrev = trackPoints[0].Speed;
 
       double sumSpeed = 0.0d;
 
       for (int i = 0; i < trackPoints.Count; i++)
       {
-        if (trackPoints[i].Extensions is not null && speedPrev is not null)
-        {
+        //if (trackPoints[i].Extensions is not null && speedPrev is not null)
+        //{
           // Accelerations and decelerationCount
           double dtSec = (trackPoints[i].Time - dtPrev).TotalSeconds;
           if (dtSec > 0)
           {
-            double speedDelta = (trackPoints[i].Extensions.Speed - speedPrev.Value) / 3.6 / dtSec;
+            double speedDelta = (trackPoints[i].Speed - speedPrev.Value) / 3.6 / dtSec;
             if (speedDelta > 2.0d)
             {
               fastAccelerationCount++;
@@ -118,23 +131,23 @@
               fastDecelerationCount++;
             }
           }
-        }
+        //}
 
         dtPrev = trackPoints[i].Time;
-        speedPrev = trackPoints[i].Extensions?.Speed;
+        speedPrev = trackPoints[i].Speed;
 
         // Speed and max speed.
         // NOTE: There are cases where speed value is not available.
         // Right now, to make visible I'm putting -1 as value.
         // In real case it would make more sense to copy previous data point.
-        if (trackPoints[i].Extensions is not null)
-        {
-          maxSpeed = Math.Max(maxSpeed, trackPoints[i].Extensions.Speed);
-          sumSpeed = trackPoints[i].Extensions.Speed;
-        }
+        //if (trackPoints[i].Extensions is not null)
+        //{
+          maxSpeed = Math.Max(maxSpeed, trackPoints[i].Speed);
+          sumSpeed = trackPoints[i].Speed;
+        //}
 
         // Elevation gain and loss.
-        double diff = elePrev - trackPoints[i].Ele;
+        double diff = elePrev - trackPoints[i].Elevation;
         if (diff > 0.0d)
         {
           elevationGain += diff;
@@ -143,12 +156,16 @@
         {
           elevationLoss -= diff;
         }
-        elePrev = trackPoints[i].Ele;
+        elePrev = trackPoints[i].Elevation;
 
         // Distnace
-        distance += Geo.HaversineDistance(latPrev, lonPrev, trackPoints[i].Lat, trackPoints[i].Lon);
-        latPrev = trackPoints[i].Lat;
-        lonPrev = trackPoints[i].Lon;
+        distance += Geo.HaversineDistance(
+          latPrev, 
+          lonPrev, 
+          trackPoints[i].Latitude, 
+          trackPoints[i].Longitude);
+        latPrev = trackPoints[i].Latitude;
+        lonPrev = trackPoints[i].Longitude;
       }
 
       //int fastAccelerationCount = DriverDynamics.AccelerationsRates(xs, ys).Count(x => x >= 2.0);
@@ -166,12 +183,13 @@
         FastAccelerationCount = fastAccelerationCount,
         FastDecelerationCount = fastDecelerationCount,
         MaxSpeed = maxSpeed,
-        AvgSpeed = avgSpeed
+        AvgSpeed = avgSpeed,
+        TrackPoints = trackPoints
       };
 
       rides.Add(ride);
     }
-    
+
     await using AppDbContext db = await DbContextFactory.CreateDbContextAsync();
     db.Rides.AddRange(rides);
     await db.SaveChangesAsync();

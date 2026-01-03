@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Website.Data;
 
@@ -10,9 +11,11 @@ using Website.Data;
 namespace Website.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260103081736_Add_TrackPoint_Table")]
+    partial class Add_TrackPoint_Table
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.1");
@@ -89,7 +92,7 @@ namespace Website.Data.Migrations
 
                     b.HasIndex("RideId");
 
-                    b.ToTable("TrackPoints");
+                    b.ToTable("TrackPoint");
                 });
 
             modelBuilder.Entity("Website.Models.TrackPoint", b =>

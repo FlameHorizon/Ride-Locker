@@ -1,7 +1,45 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+
+@using Website.Data
+@using Website.Models;
+@using Website.Components.Pieces;
+@using Microsoft.EntityFrameworkCore
+
+@inject ILogger<Home> Logger
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 
 <PageTitle>Home</PageTitle>
 
 <h1>Hello, world!</h1>
 
-Welcome to your new app.
+<div class="content-inner position-relative m-auto">
+  <table class="table table-borderless table-striped">
+    <tbody>
+      @foreach (Ride ride in _rides) {
+        <tr>
+          <RideTableRow Ride=@ride />
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+@code {
+  private List<Ride> _rides = [];
+
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    if (!firstRender) return;
+
+    await using AppDbContext db = await DbContextFactory.CreateDbContextAsync();
+    _rides = db.Rides
+    .AsNoTracking()
+    .Include(x => x.TrackPoints)
+    .OrderByDescending(x => x.Start)
+    .ToList();
+
+    StateHasChanged();
+
+  }
+}

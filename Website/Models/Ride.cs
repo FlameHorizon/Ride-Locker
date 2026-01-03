@@ -15,4 +15,6 @@ public class Ride
   public int FastAccelerationCount { get; set; }
   public int FastDecelerationCount { get; set; }
   public int TrackPointCount {get;set;}
+
+  public List<TrackPoint> TrackPoints { get; set; } = [];
 }
