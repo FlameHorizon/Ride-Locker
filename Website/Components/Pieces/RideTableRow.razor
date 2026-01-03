@@ -103,12 +103,14 @@
       Directory.CreateDirectory(storagePath);
     }
 
-    string relPath = Env.GetRelativeWebPath(iconPath);
+    Logger.LogInformation($"Saving icon at '{iconPath}'");
     // NOTE: We know that file does not exist, we checked that at the beginning
     // of the method.
     File.Create(iconPath).Close();
     image.SaveAsPng(iconPath);
 
+    string relPath = Env.GetRelativeWebPath(iconPath);
+    Logger.LogInformation($"Relative path of the icon is '{0}'", relPath);
     return relPath;
   }
 
