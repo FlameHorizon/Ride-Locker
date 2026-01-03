@@ -8,7 +8,7 @@
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 
-@* @using ValueType = Syncfusion.Blazor.Charts.ValueType *@
+@using ValueType = Syncfusion.Blazor.Charts.ValueType
 @* 
   I think, I'm a bit too stupid yet to use pre-render pass effectively
   so, I'm disabling it for now. More on pre-render pass for interactive components
@@ -74,7 +74,7 @@
 
   </div>
 
-  @* <div class="row mb-2">
+  <div class="row mb-2">
     <div class="col-sm-12 mb-3 mb-sm-0">
       <div class="card">
         <div class="card-body">
@@ -164,7 +164,7 @@
         </div>
       </div>
     </div>
-  </div> *@
+  </div>
 </div>
 
 
@@ -172,9 +172,9 @@
   private List<Ride> _rides = [];
   private List<TrackPoint> _tracks = [];
 
-//  private IEnumerable<ChartData<string, double>> _distanceOverMonthsData = [];
-//  private IEnumerable<ChartData<string, double>> _speedOverMonthsData = [];
-//  private IEnumerable<ChartData<double>> _speedDistributionData = [];
+  private IEnumerable<ChartData<string, double>> _distanceOverMonthsData = [];
+  private IEnumerable<ChartData<string, double>> _speedOverMonthsData = [];
+  private IEnumerable<ChartData<double>> _speedDistributionData = [];
 
   protected override async Task OnInitializedAsync() {
     // This method will be called once since pre-render is disabled.
@@ -186,10 +186,10 @@
       .ToList();
 
     _tracks = _rides.SelectMany(x => x.TrackPoints).ToList();
-//    CreateSpeedHistogramData().ToList();
-//    _distanceOverMonthsData = CreateDistanceOverMonthsData();
-//    _speedOverMonthsData = CreateSpeedOverMonthData();
-//    _speedDistributionData = CreateSpeedDistributionData();
+    CreateSpeedHistogramData().ToList();
+    _distanceOverMonthsData = CreateDistanceOverMonthsData();
+    _speedOverMonthsData = CreateSpeedOverMonthData();
+    _speedDistributionData = CreateSpeedDistributionData();
   }
 
   // Unfortunately, there isn't a an overload of Sum that accepts an
@@ -205,21 +205,21 @@
   // Since histogram can't be created from rides themselves,
   // I need to again look into all GPX files to get all required
   // details.
-//  private IEnumerable<ChartData<double, double>> CreateSpeedHistogramData() {
-//    return Charts.CreateSpeedHistogramData(_tracks);
-//  }
-//
-//  private IEnumerable<ChartData<string, double>> CreateDistanceOverMonthsData() {
-//    return Charts.CreateDistanceOverMonthsData(_tracks);
-//  }
-//
-//  private IEnumerable<ChartData<string, double>> CreateSpeedOverMonthData() {
-//    return Charts.CreateSpeedOverMonthData(_tracks);
-//  }
-//
-//  private IEnumerable<ChartData<double>> CreateSpeedDistributionData() {
-//    return Charts.CreateSpeedDistributionData(_tracks);
-//  }
+  private IEnumerable<ChartData<double, double>> CreateSpeedHistogramData() {
+    return Charts.CreateSpeedHistogramData(_tracks);
+  }
+
+  private IEnumerable<ChartData<string, double>> CreateDistanceOverMonthsData() {
+    return Charts.CreateDistanceOverMonthsData(_tracks);
+  }
+
+  private IEnumerable<ChartData<string, double>> CreateSpeedOverMonthData() {
+    return Charts.CreateSpeedOverMonthData(_tracks);
+  }
+
+  private IEnumerable<ChartData<double>> CreateSpeedDistributionData() {
+    return Charts.CreateSpeedDistributionData(_tracks);
+  }
 
   private string GetAverageTripDuration() {
     if (_rides.Count == 0) {
