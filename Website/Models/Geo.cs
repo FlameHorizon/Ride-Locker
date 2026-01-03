@@ -1,5 +1,3 @@
-using Website.Models;
-
 public static class Geo {
   private const double EarthRadiusKm = 6371.0;
 
