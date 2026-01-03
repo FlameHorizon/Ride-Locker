@@ -3,7 +3,15 @@ namespace Website.Models;
 public class Ride
 {
   public int Id { get; set; }
+
+  /// <summary>
+  /// In meters per second.
+  /// </summary>
   public double MaxSpeed { get; set; }
+
+  /// <summary>
+  /// In meters per second.
+  /// </summary>
   public double AvgSpeed { get; set; }
   public DateTime Start { get; set; }
   public DateTime End { get; set; }

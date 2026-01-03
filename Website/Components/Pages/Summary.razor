@@ -234,7 +234,7 @@
       return "0 km/h";
     }
 
-    return Math.Round(_rides.Average(x => x.AvgSpeed), 2) + " km/h";
+    return Math.Round(_rides.Average(x => x.AvgSpeed) * 3.6, 2) + " km/h";
   }
 
   private string GetMaxSpeed() {
@@ -242,7 +242,7 @@
       return "0 km/h";
     }
 
-    return Math.Round(_rides.Max(x => x.MaxSpeed), 2) + " km/h";
+    return Math.Round(_rides.Max(x => x.MaxSpeed) * 3.6 , 2) + " km/h";
   }
 
 }
