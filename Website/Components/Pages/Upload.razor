@@ -115,23 +115,19 @@
 
       for (int i = 0; i < trackPoints.Count; i++)
       {
-        //if (trackPoints[i].Extensions is not null && speedPrev is not null)
-        //{
-          // Accelerations and decelerationCount
-          double dtSec = (trackPoints[i].Time - dtPrev).TotalSeconds;
-          if (dtSec > 0)
+        double dtSec = (trackPoints[i].Time - dtPrev).TotalSeconds;
+        if (dtSec > 0)
+        {
+          double speedDelta = (trackPoints[i].Speed - speedPrev.Value) / 3.6 / dtSec;
+          if (speedDelta > 2.0d)
           {
-            double speedDelta = (trackPoints[i].Speed - speedPrev.Value) / 3.6 / dtSec;
-            if (speedDelta > 2.0d)
-            {
-              fastAccelerationCount++;
-            }
-            else if (speedDelta < -2.0d)
-            {
-              fastDecelerationCount++;
-            }
+            fastAccelerationCount++;
           }
-        //}
+          else if (speedDelta < -2.0d)
+          {
+            fastDecelerationCount++;
+          }
+        }
 
         dtPrev = trackPoints[i].Time;
         speedPrev = trackPoints[i].Speed;
@@ -140,11 +136,9 @@
         // NOTE: There are cases where speed value is not available.
         // Right now, to make visible I'm putting -1 as value.
         // In real case it would make more sense to copy previous data point.
-        //if (trackPoints[i].Extensions is not null)
-        //{
-          maxSpeed = Math.Max(maxSpeed, trackPoints[i].Speed);
-          sumSpeed += trackPoints[i].Speed;
-        //}
+
+        maxSpeed = Math.Max(maxSpeed, trackPoints[i].Speed);
+        sumSpeed += trackPoints[i].Speed;
 
         // Elevation gain and loss.
         double diff = elePrev - trackPoints[i].Elevation;
@@ -160,16 +154,14 @@
 
         // Distnace
         distance += Geo.HaversineDistance(
-          latPrev, 
-          lonPrev, 
-          trackPoints[i].Latitude, 
+          latPrev,
+          lonPrev,
+          trackPoints[i].Latitude,
           trackPoints[i].Longitude);
         latPrev = trackPoints[i].Latitude;
         lonPrev = trackPoints[i].Longitude;
       }
 
-      //int fastAccelerationCount = DriverDynamics.AccelerationsRates(xs, ys).Count(x => x >= 2.0);
-      //int fastDecelerationCount = DriverDynamics.DecelerationsRates(xs, ys).Count(x => x <= -2.0);
       double avgSpeed = sumSpeed / trackPointCount;
 
       var ride = new Ride

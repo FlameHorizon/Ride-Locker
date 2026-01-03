@@ -1,8 +1,21 @@
 using Microsoft.EntityFrameworkCore;
 using Website.Components;
 using Website.Data;
+using Syncfusion.Blazor;
+using Syncfusion.Licensing;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Syncfusion setup with licence key.
+var syncfusionKey = Environment.GetEnvironmentVariable("SYNCFUSION_LICENSE_KEY");
+
+if (!string.IsNullOrWhiteSpace(syncfusionKey))
+{
+    SyncfusionLicenseProvider.RegisterLicense(syncfusionKey);
+}
+
+builder.Services.AddSyncfusionBlazor();
+
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

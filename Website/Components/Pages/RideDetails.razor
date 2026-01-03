@@ -7,7 +7,7 @@
 @using System.Globalization
 @using Microsoft.EntityFrameworkCore
 
-@* @using ValueType = Syncfusion.Blazor.Charts.ValueType *@
+@using ValueType = Syncfusion.Blazor.Charts.ValueType
 
 @rendermode InteractiveServer
 
@@ -48,7 +48,7 @@
 
   </div>
 
-  @* <div class="row mb-2">
+  <div class="row mb-2">
     <div class="col-sm-12 mb-3 mb-sm-0">
       <div class="card">
         <div class="card-body">
@@ -170,7 +170,7 @@
         </div>
       </div>
     </div>
-  </div> *@
+  </div>
 </div>
 
 @code {
@@ -196,24 +196,19 @@
       .Include(x => x.TrackPoints)
       .First(x => x.Id == Id);
 
-//    _speedOverTimeData = Charts.CreateSpeedOverTimeData(_ride.TrackSegments);
-//    _speedHistogramData = Charts.CreateSpeedHistogramData(_ride.TrackSegments);
-//    _speedRunningAverageData = Charts.CreateSpeedRunningAverageData(_ride.TrackSegments);
-//    _driveDynamicsAccelerationsData = Charts.CreateDriveDynamicsAccelerationsData(_ride.TrackSegments);
-//    _driveDynamicsDecelerationsData = Charts.CreateDriveDynamicsDecelerationsData(_ride.TrackSegments);
-//    _elevationChangesData = Charts.CreateElevationChangesData(_ride.TrackSegments);
+    _speedOverTimeData = Charts.CreateSpeedOverTimeData(_ride.TrackPoints);
+    _speedHistogramData = Charts.CreateSpeedHistogramData(_ride.TrackPoints);
+    _speedRunningAverageData = Charts.CreateSpeedRunningAverageData(_ride.TrackPoints);
+    _driveDynamicsAccelerationsData = Charts.CreateDriveDynamicsAccelerationsData(_ride.TrackPoints);
+    _driveDynamicsDecelerationsData = Charts.CreateDriveDynamicsDecelerationsData(_ride.TrackPoints);
+    if (_ride.TrackPointCount < 3){
+       _elevationChangesData = [];
+    }else 
+    {
+      _elevationChangesData = Charts.CreateElevationChangesData(_ride.TrackPoints);
+    }
+    
 
     StateHasChanged();
-  }
-
-  public class ChartData<TX>
-  {
-    public TX XValue { get; set; }
-  }
-
-  public class ChartData<TX, TY>
-  {
-    public TX XValue { get; set; }
-    public TY YValue { get; set; }
   }
 }

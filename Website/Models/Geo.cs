@@ -1,3 +1,5 @@
+using Website.Models;
+
 public static class Geo {
   private const double EarthRadiusKm = 6371.0;
 
@@ -68,4 +70,18 @@ public static class Geo {
     (double x, double y) o = LatLonToWebMercator(lat0, lon0);
     return (p.x - o.x, p.y - o.y);
   }
+
+  public static double HaversineDistance(List<TrackPoint> segments) {
+    double totalDistance = 0.0;
+
+    for (int i = 1; i < segments.Count; i++)
+      totalDistance += HaversineDistance(
+          segments[i - 1].Latitude,
+          segments[i - 1].Longitude,
+          segments[i].Latitude,
+          segments[i].Longitude);
+
+    return totalDistance;
+  }
+
 }
