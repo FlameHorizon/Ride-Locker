@@ -1,0 +1,17 @@
+footer {
+    background-color: #f0f0f0;
+    padding: 1rem;
+}
+
+.content-inner {
+    max-width: 960px;
+    padding: 20px;
+}
+
+.m-auto {
+    margin: auto !important;
+}
+
+.position-relative {
+  position: relative !important;
+}

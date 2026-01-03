@@ -1,23 +1,44 @@
 ﻿@inherits LayoutComponentBase
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+  <div class="container">
+
+    <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
+      <a href="/"
+         class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
+        <svg class="bi me-2" width="40" height="32" aria-hidden="true">
+          <use xlink:href="#bootstrap"></use>
+        </svg> <span class="fs-4">Ride locker</span>
+      </a>
+
+      <nav class="nav nav-pills">
+        <div class="nav-item px-3">
+          <NavLink class="nav-link" href="#" Match="NavLinkMatch.All">
+            Home
+          </NavLink>
+          </div>
+
+        <div class="nav-item px-3">
+          <NavLink class="nav-link" href="core-metrics">
+            Core metrics
+          </NavLink>
+
+        </div>
+      </nav>
+
+    </header>
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
+      <article class="content px-4">
+        @Body
+      </article>
     </main>
+
+  </div>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+  An unhandled error has occurred.
+  <a href="." class="reload">Reload</a>
+  <span class="dismiss">🗙</span>
 </div>
