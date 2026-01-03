@@ -1,0 +1,219 @@
+@page "/ride-details/{Id:int}"
+
+@using Website.Models
+@using Website.Data;
+@using Website.Components.Pieces
+@using System.Diagnostics
+@using System.Globalization
+@using Microsoft.EntityFrameworkCore
+
+@* @using ValueType = Syncfusion.Blazor.Charts.ValueType *@
+
+@rendermode InteractiveServer
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory;
+
+@inject IWebHostEnvironment Env
+@inject NavigationManager NavigationManager
+
+<PageTitle>@Id</PageTitle>
+
+<h1>@Id</h1>
+
+<div class="container">
+  <div class="row mb-2">
+
+    <RideDetailCard Title="Total distance"
+      Text="@(Math.Round(_ride.Distance, 2).ToString(CultureInfo.InvariantCulture) + " km")" />
+
+    <RideDetailCard Title="Total driving time" Text="@_ride.Duration.ToString()" />
+
+  </div>
+
+  <div class="row mb-2">
+
+    <RideDetailCard Title="Elevation gain"
+      Text="@(Math.Round(_ride.ElevationGain, 2).ToString(CultureInfo.InvariantCulture) + " m")" />
+
+    <RideDetailCard Title="Elevation loss"
+      Text="@(Math.Round(_ride.ElevationLoss, 2).ToString(CultureInfo.InvariantCulture) + " m")" />
+
+  </div>
+
+  <div class="row mb-2">
+
+    <RideDetailCard Title="No. of fast accelerations" Text="@_ride.FastAccelerationCount.ToString()" />
+
+    <RideDetailCard Title="No. of fast decelerations" Text="@_ride.FastDecelerationCount.ToString()" />
+
+  </div>
+
+  @* <div class="row mb-2">
+    <div class="col-sm-12 mb-3 mb-sm-0">
+      <div class="card">
+        <div class="card-body">
+          <div style="height:400px">
+            <SfChart Title="Elevation changes">
+              <ChartPrimaryXAxis ValueType="ValueType.DateTime" />
+              <ChartTooltipSettings Enable="true" />
+
+              <ChartSeriesCollection>
+                <ChartSeries DataSource="@_elevationChangesData" XName="XValue" YName="YValue"
+                  Type="ChartSeriesType.SplineArea">
+
+                  <ChartSeriesAnimation Enable="false" Duration="0" />
+                </ChartSeries>
+              </ChartSeriesCollection>
+            </SfChart>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-2">
+    <div class="col-sm-6 mb-3 mb-sm-0">
+      <div class="card">
+        <div class="card-body">
+          <div style="height:400px">
+            <SfChart Title="Speed histogram">
+              <ChartPrimaryXAxis ValueType="ValueType.Category" />
+              <ChartTooltipSettings Enable="true" />
+
+              <ChartSeriesCollection>
+                <ChartSeries DataSource="@_speedHistogramData" XName="XValue" YName="YValue"
+                  Type="ChartSeriesType.Column">
+                  <ChartSeriesAnimation Enable="false" Duration="0" />
+                </ChartSeries>
+              </ChartSeriesCollection>
+            </SfChart>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 mb-3 mb-sm-0">
+      <div class="card">
+        <div class="card-body">
+          <div style="height:400px">
+            <SfChart Title="Speed running average">
+              <ChartPrimaryXAxis ValueType="ValueType.DateTime" />
+              <ChartTooltipSettings Enable="true" />
+
+              <ChartSeriesCollection>
+                <ChartSeries DataSource="@_speedRunningAverageData" XName="XValue" YName="YValue"
+                  Type="ChartSeriesType.Line">
+                  <ChartSeriesAnimation Enable="false" Duration="0" />
+                </ChartSeries>
+              </ChartSeriesCollection>
+            </SfChart>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-2">
+    <div class="col-sm-12 mb-3 mb-sm-0">
+      <div class="card">
+        <div class="card-body">
+          <div style="height:400px">
+            <SfChart Title="Speed over time">
+              <ChartPrimaryXAxis ValueType="ValueType.DateTime" />
+              <ChartTooltipSettings Enable="true" />
+
+              <ChartSeriesCollection>
+                <ChartSeries DataSource="@_speedOverTimeData" XName="XValue" YName="YValue" Type="ChartSeriesType.Line">
+                  <ChartSeriesAnimation Enable="false" Duration="0" />
+                </ChartSeries>
+
+                <ChartSeries DataSource="@_speedRunningAverageData" XName="XValue" YName="YValue"
+                  Type="ChartSeriesType.Line">
+                  <ChartSeriesAnimation Enable="false" Duration="0" />
+                </ChartSeries>
+
+              </ChartSeriesCollection>
+            </SfChart>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-2">
+    <div class="col-sm-12 mb-3 mb-sm-0">
+      <div class="card">
+        <div class="card-body">
+          <div style="height:400px">
+            <SfChart Title="Driver dynamics">
+
+              <ChartPrimaryXAxis ValueType="ValueType.DateTime" />
+              <ChartTooltipSettings Enable="true" />
+
+              <ChartZoomSettings EnableMouseWheelZooming="true" EnablePinchZooming="true" EnableSelectionZooming="true"
+                ToolbarDisplayMode="ToolbarMode.Always" />
+
+              <ChartSeriesCollection>
+                <ChartSeries DataSource="@_driveDynamicsAccelerationsData" XName="XValue" YName="YValue"
+                  Type="ChartSeriesType.Area">
+                  <ChartSeriesAnimation Enable="false" Duration="0" />
+                </ChartSeries>
+
+                <ChartSeries DataSource="@_driveDynamicsDecelerationsData" XName="XValue" YName="YValue"
+                  Type="ChartSeriesType.Area">
+                  <ChartSeriesAnimation Enable="false" Duration="0" />
+                </ChartSeries>
+
+              </ChartSeriesCollection>
+            </SfChart>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div> *@
+</div>
+
+@code {
+  [Parameter] public int Id { get; set; }
+
+  private Ride _ride = new();
+
+  private IEnumerable<ChartData<DateTime, double>> _speedOverTimeData = [];
+  private IEnumerable<ChartData<double, double>> _speedHistogramData = [];
+  private IEnumerable<ChartData<DateTime, double>> _speedRunningAverageData = [];
+  private IEnumerable<ChartData<DateTime, double>> _driveDynamicsAccelerationsData = [];
+  private IEnumerable<ChartData<DateTime, double>> _driveDynamicsDecelerationsData = [];
+  private IEnumerable<ChartData<DateTime, double>> _elevationChangesData = [];
+
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    if (!firstRender) return;
+
+    // Read cached value which is stored in the same directory as gpx file.
+    await using AppDbContext db = await DbContextFactory.CreateDbContextAsync();
+    _ride = db.Rides
+      .AsNoTracking()
+      .Include(x => x.TrackPoints)
+      .First(x => x.Id == Id);
+
+//    _speedOverTimeData = Charts.CreateSpeedOverTimeData(_ride.TrackSegments);
+//    _speedHistogramData = Charts.CreateSpeedHistogramData(_ride.TrackSegments);
+//    _speedRunningAverageData = Charts.CreateSpeedRunningAverageData(_ride.TrackSegments);
+//    _driveDynamicsAccelerationsData = Charts.CreateDriveDynamicsAccelerationsData(_ride.TrackSegments);
+//    _driveDynamicsDecelerationsData = Charts.CreateDriveDynamicsDecelerationsData(_ride.TrackSegments);
+//    _elevationChangesData = Charts.CreateElevationChangesData(_ride.TrackSegments);
+
+    StateHasChanged();
+  }
+
+  public class ChartData<TX>
+  {
+    public TX XValue { get; set; }
+  }
+
+  public class ChartData<TX, TY>
+  {
+    public TX XValue { get; set; }
+    public TY YValue { get; set; }
+  }
+}

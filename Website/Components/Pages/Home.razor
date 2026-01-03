@@ -34,10 +34,10 @@
 
     await using AppDbContext db = await DbContextFactory.CreateDbContextAsync();
     _rides = db.Rides
-    .AsNoTracking()
-    .Include(x => x.TrackPoints)
-    .OrderByDescending(x => x.Start)
-    .ToList();
+      .AsNoTracking()
+      .Include(x => x.TrackPoints)
+      .OrderByDescending(x => x.Start)
+      .ToList();
 
     StateHasChanged();
 
