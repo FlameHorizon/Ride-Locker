@@ -35,10 +35,10 @@
   <div class="row mb-2">
 
     <RideDetailCard Title="Total distance"
-                    Text="@(Math.Round(_rides.Sum(x => x.Distance), 2) + " km")"/>
+                    Text="@(Math.Round(Rides.Sum(x => x.Distance), 2) + " km")"/>
 
     <RideDetailCard Title="Total driving time"
-                    Text="@(SumDurations(_rides).ToString())"/>
+                    Text="@(SumDurations(Rides).ToString())"/>
 
   </div>
 
@@ -48,7 +48,7 @@
                     Text="@GetAverageTripDuration()"/>
 
     <RideDetailCard Title="Elevation gain/loss (m)"
-                    Text="@(Math.Round(_rides.Sum(x => x.ElevationGain), 2) + "/" + Math.Round(_rides.Sum(x => x.ElevationLoss), 2))"/>
+                    Text="@(Math.Round(Rides.Sum(x => x.ElevationGain), 2) + "/" + Math.Round(Rides.Sum(x => x.ElevationLoss), 2))"/>
 
   </div>
 
@@ -70,7 +70,7 @@
   <div class="row mb-2">
 
     <RideDetailCard Title="Harsh acceleration/breaking count"
-                    Text="@(_rides.Sum(x => x.FastAccelerationCount) + "/" + _rides.Sum(x => x.FastDecelerationCount))"/>
+                    Text="@(Rides.Sum(x => x.FastAccelerationCount) + "/" + Rides.Sum(x => x.FastDecelerationCount))"/>
 
   </div>
 
@@ -94,7 +94,7 @@
               </ChartPrimaryYAxis>
 
               <ChartSeriesCollection>
-                <ChartSeries DataSource="@_speedDistributionData"
+                <ChartSeries DataSource="@SpeedDistributionData"
                              YName="XValue"
                              Type="ChartSeriesType.Histogram"
                              BinInterval="10"
@@ -127,7 +127,7 @@
               <ChartTooltipSettings Enable="true"/>
 
               <ChartSeriesCollection>
-                <ChartSeries DataSource="@_distanceOverMonthsData"
+                <ChartSeries DataSource="@DistanceOverMonthsData"
                              XName="XValue"
                              YName="YValue"
                              Type="ChartSeriesType.Column">
@@ -152,7 +152,7 @@
               <ChartTooltipSettings Enable="true"/>
 
               <ChartSeriesCollection>
-                <ChartSeries DataSource="@_speedOverMonthsData"
+                <ChartSeries DataSource="@SpeedOverMonthsData"
                              XName="XValue"
                              YName="YValue"
                              Type="ChartSeriesType.Column">
@@ -168,81 +168,4 @@
 </div>
 
 
-@code {
-  private List<Ride> _rides = [];
-  private List<TrackPoint> _tracks = [];
 
-  private IEnumerable<ChartData<string, double>> _distanceOverMonthsData = [];
-  private IEnumerable<ChartData<string, double>> _speedOverMonthsData = [];
-  private IEnumerable<ChartData<double>> _speedDistributionData = [];
-
-  protected override async Task OnInitializedAsync() {
-    // This method will be called once since pre-render is disabled.
-    // When pre-render is disabled, page will flicker on reload.
-    await using AppDbContext db = await DbContextFactory.CreateDbContextAsync();
-    _rides = db.Rides
-      .AsNoTracking()
-      .Include(x => x.TrackPoints)
-      .ToList();
-
-    _tracks = _rides.SelectMany(x => x.TrackPoints).ToList();
-    CreateSpeedHistogramData().ToList();
-    _distanceOverMonthsData = CreateDistanceOverMonthsData();
-    _speedOverMonthsData = CreateSpeedOverMonthData();
-    _speedDistributionData = CreateSpeedDistributionData();
-  }
-
-  // Unfortunately, there isn't a an overload of Sum that accepts an
-  // IEnumerable<TimeSpan>. Additionally, there's no current way of
-  // specifying operator-based generic constraints for type-parameters,
-  // so even though TimeSpan is "natively" summable, that fact can't be
-  // picked up easily by generic code.
-  private static TimeSpan SumDurations(List<Ride> rides) {
-    return rides.Select(x => x.Duration)
-      .Aggregate(TimeSpan.Zero, (t1, t2) => t1 + t2);
-  }
-
-  // Since histogram can't be created from rides themselves,
-  // I need to again look into all GPX files to get all required
-  // details.
-  private IEnumerable<ChartData<double, double>> CreateSpeedHistogramData() {
-    return Charts.CreateSpeedHistogramData(_tracks);
-  }
-
-  private IEnumerable<ChartData<string, double>> CreateDistanceOverMonthsData() {
-    return Charts.CreateDistanceOverMonthsData(_tracks);
-  }
-
-  private IEnumerable<ChartData<string, double>> CreateSpeedOverMonthData() {
-    return Charts.CreateSpeedOverMonthData(_tracks);
-  }
-
-  private IEnumerable<ChartData<double>> CreateSpeedDistributionData() {
-    return Charts.CreateSpeedDistributionData(_tracks);
-  }
-
-  private string GetAverageTripDuration() {
-    if (_rides.Count == 0) {
-      return "0 minutes";
-    }
-
-    return Math.Round(_rides.Average(x => x.Duration.TotalMinutes), 2) + " minutes";
-  }
-
-  private string GetAverageSpeed() {
-    if (_rides.Count == 0) {
-      return "0 km/h";
-    }
-
-    return Math.Round(_rides.Average(x => x.AvgSpeed) * 3.6, 2) + " km/h";
-  }
-
-  private string GetMaxSpeed() {
-    if (_rides.Count == 0) {
-      return "0 km/h";
-    }
-
-    return Math.Round(_rides.Max(x => x.MaxSpeed) * 3.6 , 2) + " km/h";
-  }
-
-}
