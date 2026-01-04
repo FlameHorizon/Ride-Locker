@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Website.Models;
 
 public static class Geo {
@@ -24,6 +25,7 @@ public static class Geo {
     return EarthRadiusKm * c;
   }
 
+  [MethodImpl(MethodImplOptions.AggressiveInlining)]
   private static double DegreesToRadians(double degrees) {
     return degrees * Math.PI / 180.0;
   }

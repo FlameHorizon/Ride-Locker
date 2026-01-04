@@ -9,20 +9,9 @@
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 
 @using ValueType = Syncfusion.Blazor.Charts.ValueType
-@* 
-  I think, I'm a bit too stupid yet to use pre-render pass effectively
-  so, I'm disabling it for now. More on pre-render pass for interactive components
-  https://learn.microsoft.com/en-us/aspnet/core/blazor/components/prerender?view=aspnetcore-10.0
-
-  There is also documentation for peristance of state when doing pre-render pass
-  https://learn.microsoft.com/en-us/aspnet/core/blazor/state-management/prerendered-state-persistence?view=aspnetcore-10.0
-*@
 @rendermode InteractiveServer
-@* @inject IWebHostEnvironment Env *@
 
-<PageTitle>Core Metrics</PageTitle>
-
-<h1>Core Metrics</h1>
+<PageTitle>Summary</PageTitle>
 
 <h2>Overall</h2>
 

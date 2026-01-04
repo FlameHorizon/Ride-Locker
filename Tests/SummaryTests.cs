@@ -46,7 +46,7 @@ public class SummaryTests
                     new TrackPoint {
                         Time = DateTime.MinValue,
                         Latitude = 0.0,
-                        Longitude = 0.0
+                        Longitude = 0.0,
                     },
                     new TrackPoint {
                         Time = DateTime.MinValue,
@@ -63,7 +63,48 @@ public class SummaryTests
                         Latitude = 2.0,
                         Longitude = 0.0
                     }
+                },
+            }
+        };
 
+        var s = new Summary(rides);
+
+        Assert.Single(s.DistanceOverMonthsData);
+        var first = s.DistanceOverMonthsData.First();
+        Assert.Equal("01-01", first.XValue);
+        Assert.Equal(111.19492664455873 * 2.0, first.YValue);
+    }
+
+    [Fact]
+    public void DistanceOverMonths_IsOk_WhenForTwoDifferentRides()
+    {
+        var rides = new List<Ride> {
+            new Ride {
+                TrackPoints = new List<TrackPoint> {
+                    new TrackPoint {
+                        Time = DateTime.MinValue,
+                        Latitude = 0.0,
+                        Longitude = 0.0
+                    },
+                    new TrackPoint {
+                        Time = DateTime.MinValue,
+                        Latitude = 1.0,
+                        Longitude = 0.0
+                    },
+                },
+            },
+            new Ride {
+                TrackPoints = new List<TrackPoint> {
+                    new TrackPoint {
+                        Time = DateTime.MinValue,
+                        Latitude = 2.0,
+                        Longitude = 0.0
+                    },
+                    new TrackPoint {
+                        Time = DateTime.MinValue,
+                        Latitude = 3.0,
+                        Longitude = 0.0
+                    }
                 }
             }
         };
@@ -92,18 +133,25 @@ public class SummaryTests
                         Latitude = 1.0,
                         Longitude = 0.0
                     },
-                    new TrackPoint {
-                        Time = DateTime.MinValue.AddMonths(1),
-                        Latitude = 1.0,
-                        Longitude = 0.0
-                    },
+                },
+                Start = DateTime.MinValue,
+                End = DateTime.MinValue,
+            },
+            new Ride {
+                TrackPoints = new List<TrackPoint> {
                     new TrackPoint {
                         Time = DateTime.MinValue.AddMonths(1),
                         Latitude = 2.0,
                         Longitude = 0.0
+                    },
+                    new TrackPoint {
+                        Time = DateTime.MinValue.AddMonths(1),
+                        Latitude = 3.0,
+                        Longitude = 0.0
                     }
-
-                }
+                },
+                Start = DateTime.MinValue.AddMonths(1),
+                End = DateTime.MinValue.AddMonths(1),
             }
         };
 
@@ -125,23 +173,30 @@ public class SummaryTests
             new Ride {
                 TrackPoints = new List<TrackPoint> {
                     new TrackPoint {
-                        Time = DateTime.MinValue,
-                        Speed = 1.0 // m/s
+                        Latitude = 0.0,
+                        Longitude = 0.0
                     },
                     new TrackPoint {
-                        Time = DateTime.MinValue,
-                        Speed = 1.0 // m/s
+                        Latitude = 1.0,
+                        Longitude = 0.0
+                    },
+                },
+                Start = DateTime.MinValue,
+                End = DateTime.MinValue.AddHours(1)
+            },
+            new Ride {
+                TrackPoints = new List<TrackPoint> {
+                    new TrackPoint {
+                        Latitude = 0.0,
+                        Longitude = 0.0
                     },
                     new TrackPoint {
-                        Time = DateTime.MinValue.AddMonths(1),
-                        Speed = 2.0 // m/s
+                        Latitude = 2.0,
+                        Longitude = 0.0
                     },
-                    new TrackPoint {
-                        Time = DateTime.MinValue.AddMonths(1),
-                        Speed = 2.0 // m/s
-                    }
-
-                }
+                },
+                Start = DateTime.MinValue.AddMonths(1),
+                End = DateTime.MinValue.AddMonths(1).AddHours(1)
             }
         };
 
@@ -149,11 +204,11 @@ public class SummaryTests
 
         var first = s.SpeedOverMonthsData.First();
         Assert.Equal("01-01", first.XValue);
-        Assert.Equal(2 * 3.6 / 2, first.YValue); // Converted into km/s
+        Assert.Equal(111.19492664455873, first.YValue * 3.6, 0.0001); // Converted into km/s
 
         var second = s.SpeedOverMonthsData.Skip(1).First();
         Assert.Equal("01-02", second.XValue);
-        Assert.Equal(2 * 2 * 3.6 / 2, second.YValue); // Converted into km/s
+        Assert.Equal(111.19492664455873 * 2, second.YValue * 3.6, 0.0001); // Converted into km/s
     }
 
     [Fact]
@@ -193,5 +248,4 @@ public class SummaryTests
         item = s.SpeedDistributionData.Skip(3).First();
         Assert.Equal(2 * 3.6, item.XValue); // Converted into km/s
     }
-
 }
