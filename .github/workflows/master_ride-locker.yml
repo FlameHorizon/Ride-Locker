@@ -24,7 +24,7 @@ jobs:
           dotnet-version: '10.x'
 
       - name: Build with dotnet
-        run: dotnet build --configuration Release
+        run: dotnet build ./Website/Website.csproj -c Release
 
       - name: dotnet publish
         run: dotnet publish ./Website/Website.csproj -c Release -o ${{ env.DOTNET_ROOT }}/myapp
@@ -64,4 +64,5 @@ jobs:
           package: .
 
           
+
 
