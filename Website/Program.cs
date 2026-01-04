@@ -16,6 +16,8 @@ if (!string.IsNullOrWhiteSpace(syncfusionKey))
 
 builder.Services.AddSyncfusionBlazor();
 
+// In-memory cache
+builder.Services.AddMemoryCache();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

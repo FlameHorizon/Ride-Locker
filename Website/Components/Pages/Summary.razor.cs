@@ -3,6 +3,7 @@ using Website.Data;
 using System.Diagnostics;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Website.Components.Pages;
 
@@ -16,37 +17,47 @@ public partial class Summary
     public IEnumerable<ChartData<string, double>> DistanceOverMonthsData = [];
     public IEnumerable<ChartData<string, double>> SpeedOverMonthsData = [];
     public IEnumerable<ChartData<double>> SpeedDistributionData = [];
+    private readonly IMemoryCache _cache;
 
 
     // NOTE: This empty constructor is needed for the DI.
     // Without it, Dependency resolver would pick second constrcutor (Summary(IEnumerable<Ride>))
     // and fail with message:
     // "Unable to resolve service for type 'System.Collections.Generic.List`1..."
-    public Summary() { }
+    public Summary(IMemoryCache cache)
+    {
+        _cache = cache;
+    }
 
     /// <summary>
     /// Mostly used as an entry point for testing.
     /// </summary>
-    public Summary(IEnumerable<Ride> rides)
-    {
-        if (rides.Any() == false) return;
+    // public Summary(IEnumerable<Ride> rides)
+    // {
+    //     if (rides.Any() == false) return;
 
-        Rides = rides.ToArray();
-        DistanceOverMonthsData = CreateDistanceOverMonthsData(Rides);
-        SpeedOverMonthsData = CreateSpeedOverMonthData(Rides);
-        SpeedDistributionData = CreateSpeedDistributionData(Rides);
-    }
+    //     Rides = rides.ToArray();
+    //     DistanceOverMonthsData = CreateDistanceOverMonthsData(Rides);
+    //     SpeedOverMonthsData = CreateSpeedOverMonthData(Rides);
+    //     SpeedDistributionData = CreateSpeedDistributionData(Rides);
+    // }
 
     protected override async Task OnInitializedAsync()
     {
         var sw = Stopwatch.StartNew();
-        await using AppDbContext db = await DbContextFactory
-          .CreateDbContextAsync();
-
-        Rides = db.Rides
-          .AsNoTracking()
-          .Include(x => x.TrackPoints)
-          .ToArray();
+        Rides = await _cache.GetOrCreateAsync(
+          "rides",
+          async entry =>
+          {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+            await using AppDbContext db = await DbContextFactory
+              .CreateDbContextAsync();
+            return db.Rides
+                .AsNoTracking()
+                .Include(x => x.TrackPoints)
+                .ToArray();
+          }
+        );
 
         Console.WriteLine($"Took {sw.ElapsedMilliseconds} ms to query database.");
         sw.Restart();
