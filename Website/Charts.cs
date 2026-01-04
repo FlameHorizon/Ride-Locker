@@ -12,7 +12,7 @@ namespace Website;
 
 public static class Charts
 {
-    public static IEnumerable<ChartData<double, double>> CreateSpeedHistogramData(List<TrackPoint> track)
+    public static IEnumerable<ChartData<double, double>> CreateSpeedHistogramData(IEnumerable<TrackPoint> track)
     {
         IEnumerable<double> ys = track.Select(x => Math.Round(x.Speed * 3.6));
         Histogram hist = Histogram.WithBinSize(5, ys);
@@ -359,7 +359,7 @@ public static class Charts
         });
     }
 
-    public static IEnumerable<ChartData<double>> CreateSpeedDistributionData(List<TrackPoint> track)
+    public static IEnumerable<ChartData<double>> CreateSpeedDistributionData(IEnumerable<TrackPoint> track)
     {
         return track.Select(x => new ChartData<double>() { XValue = x.Speed * 3.6 });
     }
