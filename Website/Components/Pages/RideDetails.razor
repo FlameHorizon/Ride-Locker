@@ -12,9 +12,9 @@
 @rendermode InteractiveServer
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory;
-
 @inject IWebHostEnvironment Env
 @inject NavigationManager NavigationManager
+@inject ILogger<RideDetails> Logger
 
 <PageTitle>@Id</PageTitle>
 
@@ -188,6 +188,7 @@
   protected override async Task OnAfterRenderAsync(bool firstRender)
   {
     if (!firstRender) return;
+    var sw = Stopwatch.StartNew();
 
     // Read cached value which is stored in the same directory as gpx file.
     await using AppDbContext db = await DbContextFactory.CreateDbContextAsync();
@@ -195,6 +196,9 @@
       .AsNoTracking()
       .Include(x => x.TrackPoints)
       .First(x => x.Id == Id);
+
+    Logger.LogDebug("Took {0} ms to get data from database.", sw.ElapsedMilliseconds);
+    sw.Restart();
 
     _speedOverTimeData = Charts.CreateSpeedOverTimeData(_ride.TrackPoints);
     _speedHistogramData = Charts.CreateSpeedHistogramData(_ride.TrackPoints);
@@ -208,7 +212,7 @@
       _elevationChangesData = Charts.CreateElevationChangesData(_ride.TrackPoints);
     }
     
-
+    Logger.LogDebug("Took {0} ms to render a page.", sw.ElapsedMilliseconds);
     StateHasChanged();
   }
 }
