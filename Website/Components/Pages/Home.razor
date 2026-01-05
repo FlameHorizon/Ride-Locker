@@ -1,15 +1,7 @@
 ﻿@page "/"
 
-@using Website.Data
-@using Website.Models;
-@using Website.Components.Pieces;
-@using Microsoft.EntityFrameworkCore
-@using Microsoft.Extensions.Caching.Memory;
-@using System.Diagnostics;
-
-@inject ILogger<Home> Logger
-@inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject IMemoryCache Cache
+@using Website.Models
+@using Website.Components.Pieces
 
 <PageTitle>Home</PageTitle>
 
@@ -26,38 +18,3 @@
     </tbody>
   </table>
 </div>
-
-@code {
-  private Ride[] _rides = [];
-
-  protected override async Task OnInitializedAsync()
-  {
-    var sw = Stopwatch.StartNew();
-
-    Ride[]? result = await Cache.GetOrCreateAsync(
-        "rides",
-        async entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-            await using AppDbContext db = await DbContextFactory
-                .CreateDbContextAsync();
-
-            return db.Rides
-                .AsNoTracking()
-                .Include(x => x.TrackPoints)
-                .OrderByDescending(x => x.Start)
-                .ToArray();
-        }
-    );
-
-    if (result is null)
-    {
-        Logger.LogWarning("Expected to get set of rides from either database or cache, but got null");
-        return;
-    }
-
-    _rides = result;
-
-    Logger.LogDebug("Took {0} ms to query database.", sw.ElapsedMilliseconds);
-  }
-}
