@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Website.Components.Pages;
 
@@ -11,14 +12,14 @@ public partial class Summary
 {
     // REFAC: Maybe custom list would be better than built in?
     // See: Issue #2.
-    public Ride[]? Rides = [];
+    public Ride[] Rides = [];
 
     // REFAC: Also use more concrete types instead of interfaces?
     public IEnumerable<ChartData<string, double>> DistanceOverMonthsData = [];
     public IEnumerable<ChartData<string, double>> SpeedOverMonthsData = [];
     public IEnumerable<ChartData<double>> SpeedDistributionData = [];
     private readonly ILogger<Summary> _logger;
-    private readonly IMemoryCache _cache;
+    private readonly IMemoryCache? _cache;
 
 
     // NOTE: This empty constructor is needed for the DI.
@@ -34,53 +35,59 @@ public partial class Summary
     /// <summary>
     /// Mostly used as an entry point for testing.
     /// </summary>
-    // public Summary(IEnumerable<Ride> rides)
-    // {
-    //     if (rides.Any() == false) return;
+    public Summary(IEnumerable<Ride> rides)
+    {
+        // For testing purposes, I'm not going to log anything anywhere.
+        // NullLogger is just for that.
+        _logger = NullLogger<Summary>.Instance;
+        
+        if (rides.Any() == false) return;
 
-    //     Rides = rides.ToArray();
-    //     DistanceOverMonthsData = CreateDistanceOverMonthsData(Rides);
-    //     SpeedOverMonthsData = CreateSpeedOverMonthData(Rides);
-    //     SpeedDistributionData = CreateSpeedDistributionData(Rides);
-    // }
+        Rides = rides.ToArray();
+        DistanceOverMonthsData = CreateDistanceOverMonthsData(Rides);
+        SpeedOverMonthsData = CreateSpeedOverMonthData(Rides);
+        SpeedDistributionData = CreateSpeedDistributionData(Rides);
+    }
 
     protected override async Task OnInitializedAsync()
     {
         var sw = Stopwatch.StartNew();
-        Rides = await _cache.GetOrCreateAsync(
-          "rides",
-          async entry =>
-          {
-              entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-              await using AppDbContext db = await DbContextFactory
-                  .CreateDbContextAsync();
 
-              return db.Rides
-                  .AsNoTracking()
-                  .Include(x => x.TrackPoints)
-                  .ToArray();
-          }
-        );
-
-        if (Rides is null)
+        // NOTE: Cache machanis is provided, when application starts with DI
+        // container. For testing, I'm not using cache.
+        if (_cache is not null)
         {
-            _logger.LogWarning("Can not retrieve rides from both cache and database. This should never happen.");
-            return;
+            Ride[]? result = await _cache.GetOrCreateAsync(
+                "rides",
+                async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                    await using AppDbContext db = await DbContextFactory
+                        .CreateDbContextAsync();
+
+                    return db.Rides
+                        .AsNoTracking()
+                        .Include(x => x.TrackPoints)
+                        .ToArray();
+                }
+            );
+
+            if (result is null)
+            {
+                _logger.LogWarning("Expected to get set of rides from either database or cache, but got null");
+                return;
+            }
+
+            Rides = result;
         }
 
-        if (Rides.Length == 0)
-        {
-            _logger.LogDebug("Retrieved set of rides has length zero.");
-        }
-
-        _logger.LogDebug("Took {0} ms to query database.", sw.ElapsedMilliseconds);
+        Console.WriteLine($"Took {sw.ElapsedMilliseconds} ms to query database.");
         sw.Restart();
 
         DistanceOverMonthsData = CreateDistanceOverMonthsData(Rides);
         SpeedOverMonthsData = CreateSpeedOverMonthData(Rides);
         SpeedDistributionData = CreateSpeedDistributionData(Rides);
-        _logger.LogDebug("Took {0} ms to create data for charts.", sw.ElapsedMilliseconds);
-
+        Console.WriteLine($"Took {sw.ElapsedMilliseconds} ms to create data for charts");
     }
 
     // Unfortunately, there isn't an overload of Sum that accepts an
