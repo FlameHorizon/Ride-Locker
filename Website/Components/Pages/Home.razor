@@ -5,6 +5,7 @@
 @using Website.Models;
 @using Website.Components.Pieces;
 @using Microsoft.EntityFrameworkCore
+@using System.Diagnostics;
 
 @inject ILogger<Home> Logger
 @inject IDbContextFactory<AppDbContext> DbContextFactory
@@ -32,6 +33,8 @@
   {
     if (!firstRender) return;
 
+    var sw = Stopwatch.StartNew();
+
     await using AppDbContext db = await DbContextFactory.CreateDbContextAsync();
     _rides = db.Rides
       .AsNoTracking()
@@ -39,7 +42,9 @@
       .OrderByDescending(x => x.Start)
       .ToList();
 
-    StateHasChanged();
+    Logger.LogDebug("Took {0} ms to query database.", sw.ElapsedMilliseconds);
 
+    StateHasChanged();
+    Logger.LogDebug("Triggered StateHasChanged.");
   }
 }

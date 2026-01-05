@@ -9,7 +9,16 @@
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 
 @using ValueType = Syncfusion.Blazor.Charts.ValueType
-@rendermode InteractiveServer
+
+@* 
+  I think, I'm a bit too stupid yet to use pre-render pass effectively
+  so, I'm disabling it for now. More on pre-render pass for interactive components
+  https://learn.microsoft.com/en-us/aspnet/core/blazor/components/prerender?view=aspnetcore-10.0
+
+  There is also documentation for peristance of state when doing pre-render pass
+  http
+*@
+@rendermode @(new InteractiveServerRenderMode(false))
 
 <PageTitle>Summary</PageTitle>
 
@@ -76,8 +85,11 @@
               </ChartPrimaryYAxis>
 
               <ChartSeriesCollection>
-                <ChartSeries DataSource="@SpeedDistributionData" YName="XValue" Type="ChartSeriesType.Histogram"
-                  BinInterval="10" ColumnWidth="0.90">
+                <ChartSeries DataSource="@SpeedDistributionData" 
+                  YName="XValue" 
+                  Type="ChartSeriesType.Histogram"
+                  BinInterval="10" 
+                  ColumnWidth="0.90">
 
                   <ChartMarker Visible="false">
                     <ChartDataLabel Visible="true" />

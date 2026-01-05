@@ -11,12 +11,13 @@ public partial class Summary
 {
     // REFAC: Maybe custom list would be better than built in?
     // See: Issue #2.
-    public Ride[] Rides = [];
+    public Ride[]? Rides = [];
 
     // REFAC: Also use more concrete types instead of interfaces?
     public IEnumerable<ChartData<string, double>> DistanceOverMonthsData = [];
     public IEnumerable<ChartData<string, double>> SpeedOverMonthsData = [];
     public IEnumerable<ChartData<double>> SpeedDistributionData = [];
+    private readonly ILogger<Summary> _logger;
     private readonly IMemoryCache _cache;
 
 
@@ -24,8 +25,9 @@ public partial class Summary
     // Without it, Dependency resolver would pick second constrcutor (Summary(IEnumerable<Ride>))
     // and fail with message:
     // "Unable to resolve service for type 'System.Collections.Generic.List`1..."
-    public Summary(IMemoryCache cache)
+    public Summary(ILogger<Summary> logger, IMemoryCache cache)
     {
+        _logger = logger;
         _cache = cache;
     }
 
@@ -49,23 +51,35 @@ public partial class Summary
           "rides",
           async entry =>
           {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-            await using AppDbContext db = await DbContextFactory
-              .CreateDbContextAsync();
-            return db.Rides
-                .AsNoTracking()
-                .Include(x => x.TrackPoints)
-                .ToArray();
+              entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+              await using AppDbContext db = await DbContextFactory
+                .CreateDbContextAsync();
+              return db.Rides
+                  .AsNoTracking()
+                  .Include(x => x.TrackPoints)
+                  .ToArray();
           }
         );
 
-        Console.WriteLine($"Took {sw.ElapsedMilliseconds} ms to query database.");
+        if (Rides is null)
+        {
+            _logger.LogWarning("Can not retrieve rides from both cache and database. This should never happen.");
+            return;
+        }
+
+        if (Rides.Length == 0)
+        {
+            _logger.LogDebug("Retrieved set of rides has length zero.");
+        }
+
+        _logger.LogDebug("Took {0} ms to query database.", sw.ElapsedMilliseconds);
         sw.Restart();
 
         DistanceOverMonthsData = CreateDistanceOverMonthsData(Rides);
         SpeedOverMonthsData = CreateSpeedOverMonthData(Rides);
         SpeedDistributionData = CreateSpeedDistributionData(Rides);
-        Console.WriteLine($"Took {sw.ElapsedMilliseconds} ms to create data for charts");
+        _logger.LogDebug("Took {0} ms to create data for charts.", sw.ElapsedMilliseconds);
+
     }
 
     // Unfortunately, there isn't an overload of Sum that accepts an
