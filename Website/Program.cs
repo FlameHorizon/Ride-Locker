@@ -3,6 +3,8 @@ using Website.Components;
 using Website.Data;
 using Syncfusion.Blazor;
 using Syncfusion.Licensing;
+using Website.Components.Pages;
+using Microsoft.Extensions.Caching.Memory;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +31,15 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
     builder.Configuration.GetConnectionString("AppDbContext") ??
     throw new InvalidOperationException("Connection string 'AppDbContext' not found.")));
 
+// Using factory delegat to tell DI which constructor should be used.
+// Since Summary page will have two constructors, which both have single
+// input argument, DI needs to know which to choose.
+builder.Services.AddScoped(factory =>
+{
+  var memoryCache = factory.GetRequiredService<IMemoryCache>();
+  return new Summary(memoryCache);
+});
+
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 var app = builder.Build();
@@ -36,9 +47,9 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-  app.UseExceptionHandler("/Error", createScopeForErrors: true);
-  // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-  app.UseHsts();
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
 }
 
 app.UseHttpsRedirection();
@@ -56,16 +67,16 @@ app.MapRazorComponents<App>()
 // See more on: https://learn.microsoft.com/en-us/ef/core/managing-schemas/migrations/applying?tabs=dotnet-core-cli#apply-migrations-at-runtime
 using (var scope = app.Services.CreateScope())
 {
-  var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-  // If 'data' folder does not exists, database will not be created
-  // and application will crash.
-  string dataDir = Path.Combine(AppContext.BaseDirectory, "data");
-  if (Directory.Exists(dataDir) == false)
-  {
-    Directory.CreateDirectory(dataDir);
-  }
-  await db.Database.MigrateAsync();
+    // If 'data' folder does not exists, database will not be created
+    // and application will crash.
+    string dataDir = Path.Combine(AppContext.BaseDirectory, "data");
+    if (Directory.Exists(dataDir) == false)
+    {
+        Directory.CreateDirectory(dataDir);
+    }
+    await db.Database.MigrateAsync();
 }
 
 app.Run();
