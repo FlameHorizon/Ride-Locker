@@ -118,7 +118,7 @@
         double dtSec = (trackPoints[i].Time - dtPrev).TotalSeconds;
         if (dtSec > 0)
         {
-          double speedDelta = (trackPoints[i].Speed - speedPrev.Value) / 3.6 / dtSec;
+          double speedDelta = (trackPoints[i].Speed - speedPrev.Value) / dtSec;
           if (speedDelta > 2.0d)
           {
             fastAccelerationCount++;
