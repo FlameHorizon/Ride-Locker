@@ -1,0 +1,54 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Website\Website.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+      <None Update="./test_data/SummaryBenchmarks/2025-09-28_15-14_niedz.-3.gpx">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="./test_data/SummaryBenchmarks/2025-10-03_17-01_pt.-3.gpx">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="./test_data/SummaryBenchmarks/2025-11-08_15-59_sob.-3.gpx">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="./test_data/SummaryBenchmarks/2025-11-09_15-18_niedz.-3.gpx">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="./test_data/SummaryBenchmarks/2025-11-29_14-38_sob..gpx">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="./test_data/SummaryBenchmarks/2025-12-01_18-30_pon..gpx">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="./test_data/SummaryBenchmarks/2025-12-05_07-04_pt..gpx">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="./test_data/SummaryBenchmarks/2025-12-06_12-30_sob..gpx">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="./test_data/SummaryBenchmarks/2025-12-25_09-33_czw..gpx">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="./test_data/SummaryBenchmarks/2025-12-25_14-51_czw..gpx">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+  </ItemGroup>
+
+
+
+
+</Project>

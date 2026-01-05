@@ -483,5 +483,9 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 Website/wwwroot/uploads/*
-Playground/trace.*
-Playground/trace.
+
+# Trace files
+trace.*
+
+# GPX files, contains sensitive information
+*.gpx
