@@ -1,14 +1,15 @@
 ﻿@page "/"
-@rendermode InteractiveServer
 
 @using Website.Data
 @using Website.Models;
 @using Website.Components.Pieces;
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Caching.Memory;
 @using System.Diagnostics;
 
 @inject ILogger<Home> Logger
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IMemoryCache Cache
 
 <PageTitle>Home</PageTitle>
 
@@ -27,24 +28,28 @@
 </div>
 
 @code {
-  private List<Ride> _rides = [];
+  private Ride[] _rides = [];
 
-  protected override async Task OnAfterRenderAsync(bool firstRender)
+  protected override async Task OnInitializedAsync()
   {
-    if (!firstRender) return;
-
     var sw = Stopwatch.StartNew();
 
-    await using AppDbContext db = await DbContextFactory.CreateDbContextAsync();
-    _rides = db.Rides
-      .AsNoTracking()
-      .Include(x => x.TrackPoints)
-      .OrderByDescending(x => x.Start)
-      .ToList();
+    _rides = await Cache.GetOrCreateAsync(
+      "rides",
+      async entry =>
+      {
+          entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+          await using AppDbContext db = await DbContextFactory
+              .CreateDbContextAsync();
+
+          return db.Rides
+              .AsNoTracking()
+              .Include(x => x.TrackPoints)
+              .OrderByDescending(x => x.Start)
+              .ToArray();
+      }
+    );
 
     Logger.LogDebug("Took {0} ms to query database.", sw.ElapsedMilliseconds);
-
-    StateHasChanged();
-    Logger.LogDebug("Triggered StateHasChanged.");
   }
 }

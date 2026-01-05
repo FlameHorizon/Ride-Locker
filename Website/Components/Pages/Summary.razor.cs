@@ -53,7 +53,8 @@ public partial class Summary
           {
               entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
               await using AppDbContext db = await DbContextFactory
-                .CreateDbContextAsync();
+                  .CreateDbContextAsync();
+
               return db.Rides
                   .AsNoTracking()
                   .Include(x => x.TrackPoints)
