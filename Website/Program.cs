@@ -31,15 +31,6 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
     builder.Configuration.GetConnectionString("AppDbContext") ??
     throw new InvalidOperationException("Connection string 'AppDbContext' not found.")));
 
-// Using factory delegat to tell DI which constructor should be used.
-// Since Summary page will have two constructors, which both have single
-// input argument, DI needs to know which to choose.
-builder.Services.AddScoped(factory =>
-{
-  var memoryCache = factory.GetRequiredService<IMemoryCache>();
-  return new Summary(memoryCache);
-});
-
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 var app = builder.Build();
