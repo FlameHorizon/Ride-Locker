@@ -21,7 +21,6 @@ public partial class Summary
     private readonly ILogger<Summary> _logger;
     private readonly IMemoryCache? _cache;
 
-
     // NOTE: This empty constructor is needed for the DI.
     // Without it, Dependency resolver would pick second constrcutor (Summary(IEnumerable<Ride>))
     // and fail with message:
@@ -40,7 +39,7 @@ public partial class Summary
         // For testing purposes, I'm not going to log anything anywhere.
         // NullLogger is just for that.
         _logger = NullLogger<Summary>.Instance;
-        
+
         if (rides.Any() == false) return;
 
         Rides = rides.ToArray();
@@ -53,7 +52,7 @@ public partial class Summary
     {
         var sw = Stopwatch.StartNew();
 
-        // NOTE: Cache machanis is provided, when application starts with DI
+        // NOTE: Cache mechanism is provided, when application starts with DI
         // container. For testing, I'm not using cache.
         if (_cache is not null)
         {

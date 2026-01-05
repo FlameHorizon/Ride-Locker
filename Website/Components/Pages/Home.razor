@@ -34,7 +34,7 @@
   {
     var sw = Stopwatch.StartNew();
 
-    _rides = await Cache.GetOrCreateAsync(
+    Ride[]? result = await Cache.GetOrCreateAsync(
         "rides",
         async entry =>
         {
@@ -49,6 +49,14 @@
                 .ToArray();
         }
     );
+
+    if (result is null)
+    {
+        Logger.LogWarning("Expected to get set of rides from either database or cache, but got null");
+        return;
+    }
+
+    _rides = result;
 
     Logger.LogDebug("Took {0} ms to query database.", sw.ElapsedMilliseconds);
   }
