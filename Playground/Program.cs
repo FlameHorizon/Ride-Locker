@@ -4,7 +4,7 @@ var rnd = Random.Shared;
 
 for (int i = 0; i < 100_00; i++)
 {
-  var rides = new List<Ride> {
+    var rides = new List<Ride> {
     new Ride {
         TrackPoints = new List<TrackPoint> {
             new TrackPoint {
@@ -30,9 +30,9 @@ for (int i = 0; i < 100_00; i++)
         }
     }
   };
-  var s = new Summary(rides);
-  Console.WriteLine(s.DistanceOverMonthsData.OrderBy(x => x.XValue).First().XValue);
-  Console.WriteLine(s.SpeedOverMonthsData.OrderBy(x => x.XValue).First().XValue);
-  Console.WriteLine(s.SpeedDistributionData.OrderBy(x => x.XValue).First().XValue);
+    var s = new Summary(rides);
+    Console.WriteLine(s.DistanceOverMonthsData.OrderBy(x => x.XValue).First().XValue);
+    Console.WriteLine(s.SpeedOverMonthsData.OrderBy(x => x.XValue).First().XValue);
+    Console.WriteLine(s.SpeedDistributionData.OrderBy(x => x.XValue).First().XValue);
 
 }

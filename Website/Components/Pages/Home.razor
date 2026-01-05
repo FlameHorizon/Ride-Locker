@@ -35,19 +35,19 @@
     var sw = Stopwatch.StartNew();
 
     _rides = await Cache.GetOrCreateAsync(
-      "rides",
-      async entry =>
-      {
-          entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-          await using AppDbContext db = await DbContextFactory
-              .CreateDbContextAsync();
+        "rides",
+        async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+            await using AppDbContext db = await DbContextFactory
+                .CreateDbContextAsync();
 
-          return db.Rides
-              .AsNoTracking()
-              .Include(x => x.TrackPoints)
-              .OrderByDescending(x => x.Start)
-              .ToArray();
-      }
+            return db.Rides
+                .AsNoTracking()
+                .Include(x => x.TrackPoints)
+                .OrderByDescending(x => x.Start)
+                .ToArray();
+        }
     );
 
     Logger.LogDebug("Took {0} ms to query database.", sw.ElapsedMilliseconds);

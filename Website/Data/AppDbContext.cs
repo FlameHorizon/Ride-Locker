@@ -6,7 +6,7 @@ namespace Website.Data;
 public class AppDbContext : DbContext
 {
     public DbSet<Ride> Rides { get; set; }
-    public DbSet<TrackPoint> TrackPoints {get;set;}
+    public DbSet<TrackPoint> TrackPoints { get; set; }
 
     public string DbPath { get; }
 
