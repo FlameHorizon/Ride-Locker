@@ -47,11 +47,6 @@ public class Ride
     public int FastDecelerationCount { get; set; }
 
     /// <summary>
-    /// Number of track points record during the ride.
-    /// </summary>
-    public int TrackPointCount { get; set; }
-
-    /// <summary>
     /// Set of track points recorded during the ride.
     /// </summary>
     public List<TrackPoint> TrackPoints { get; set; } = [];

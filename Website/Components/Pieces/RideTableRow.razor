@@ -16,7 +16,7 @@
     <li class="list-inline-item">
       <a href="@($"/ride-details/{Ride.Id}")">@Ride.Id</a>
     </li>
-    <li class="list-inline-item">@(Ride.TrackPointCount + " points")</li>
+    <li class="list-inline-item">@(Ride.TrackPoints.Count + " points")</li>
   </ul>
   <p class="text-body-secondary mb-0">
     <time title="" datetime="@Ride.Start">@FormatTimeAgo(Ride.Start)</time>
@@ -113,5 +113,4 @@
     Logger.LogInformation("Relative path of the icon is '{0}'", relPath);
     return relPath;
   }
-
 }

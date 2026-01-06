@@ -27,6 +27,7 @@ public partial class Home
     {
         var sw = Stopwatch.StartNew();
 
+        // NOTE: When values are retrieved from cache, they might be not sorted.
         Ride[]? result = await _cache.GetOrCreateAsync(
             "rides",
             async entry =>
@@ -42,6 +43,8 @@ public partial class Home
                     .ToArray();
             }
         );
+        _logger.LogDebug("Took {0} ms to query database.", sw.ElapsedMilliseconds);
+        sw.Restart();
 
         if (result is null)
         {
@@ -49,8 +52,10 @@ public partial class Home
             return;
         }
 
+        // Ordering should be done in place to avoid Linq allocations.
+        // Ordering is done here in-place and in reverse order (OrderByDescending).
         _rides = result;
-
-        _logger.LogDebug("Took {0} ms to query database.", sw.ElapsedMilliseconds);
+        _rides.Sort((a, b) => b.Start.CompareTo(a.Start));
+        _logger.LogDebug("Took {0} ms to prepare data. Size {1}", sw.ElapsedMilliseconds, _rides.Length);
     }
 }

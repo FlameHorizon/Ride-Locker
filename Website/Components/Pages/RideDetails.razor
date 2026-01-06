@@ -9,6 +9,9 @@
 
 @using ValueType = Syncfusion.Blazor.Charts.ValueType
 
+@* Maybe, we can put page into interactive server mode but do not do 
+    pre render pass?
+*@
 @rendermode InteractiveServer
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory;
@@ -190,12 +193,11 @@
     if (!firstRender) return;
     var sw = Stopwatch.StartNew();
 
-    // Read cached value which is stored in the same directory as gpx file.
     await using AppDbContext db = await DbContextFactory.CreateDbContextAsync();
     _ride = db.Rides
-      .AsNoTracking()
-      .Include(x => x.TrackPoints)
-      .First(x => x.Id == Id);
+        .AsNoTracking()
+        .Include(x => x.TrackPoints)
+        .First(x => x.Id == Id);
 
     Logger.LogDebug("Took {0} ms to get data from database.", sw.ElapsedMilliseconds);
     sw.Restart();
@@ -205,14 +207,16 @@
     _speedRunningAverageData = Charts.CreateSpeedRunningAverageData(_ride.TrackPoints);
     _driveDynamicsAccelerationsData = Charts.CreateDriveDynamicsAccelerationsData(_ride.TrackPoints);
     _driveDynamicsDecelerationsData = Charts.CreateDriveDynamicsDecelerationsData(_ride.TrackPoints);
-    if (_ride.TrackPointCount < 3){
+    if (_ride.TrackPoints.Count < 3){
        _elevationChangesData = [];
     }else 
     {
       _elevationChangesData = Charts.CreateElevationChangesData(_ride.TrackPoints);
     }
     
-    Logger.LogDebug("Took {0} ms to render a page.", sw.ElapsedMilliseconds);
+    Logger.LogDebug("Took {0} ms to prepare data. Size is always 1 ride. Track points {0}", 
+        sw.ElapsedMilliseconds,
+        _ride.TrackPoints.Count);
     StateHasChanged();
   }
 }
