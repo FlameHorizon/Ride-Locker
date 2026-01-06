@@ -157,46 +157,37 @@ public partial class Summary
     {
         if (rides.Length == 0) return [];
 
-        var temp = new List<(string, FastNumericAverageDouble)>();
+        var temp = new List<(string, FastNumericAverageDouble, int)>();
+        IFormatProvider formatProvider = CultureInfo.CurrentCulture;
         foreach (Ride ride in rides)
         {
             if (ride.TrackPoints.Count == 0) continue;
 
-            bool found = false;
             int index = -1;
 
-            IFormatProvider formatProvider = CultureInfo.CurrentCulture;
-
-            string year = ride.Start.Year.ToString(formatProvider);
-            string month = ride.Start.Month.ToString(formatProvider);
-            string key = "";
-
-            if (year.Length == 1) key += "0";
-            key += year + "-";
-
-            if (month.Length == 1) key += "0";
-            key += month;
+            // Create a numeric key (YYYYMM). NO STRINGS YET.
+            int year = ride.Start.Year;
+            int month = ride.Start.Month;
+            int numericKey = (year * 100) + month;
 
             // Serach for the label in data set.
             for (int i = 0; i < temp.Count; i++)
             {
-                if (temp[i].Item1 == key)
+                if (temp[i].Item3 == numericKey)
                 {
-                    found = true;
                     index = i;
                     break;
                 }
-                found = false;
-                index = -1;
             }
 
+
             // If found, update distance value. Otherwise add new label.
-            if (found) temp[index].Item2.Add(ride.AvgSpeed);
+            if (index != -1) temp[index].Item2.Add(ride.AvgSpeed);
             else
             {
                 var fna = new FastNumericAverageDouble();
                 fna.Add(ride.AvgSpeed);
-                temp.Add((key, fna));
+                temp.Add((year.ToString() + "-" + (month < 10 ? "0" : "") + month.ToString(), fna, numericKey));
             }
         }
 
@@ -206,12 +197,13 @@ public partial class Summary
             result.Add(new ChartData<string, double>()
             {
                 XValue = item.Item1,
-                YValue = item.Item2.Average
+                YValue = item.Item2.Average,
+                Tag = item.Item3
             });
         }
 
         // Sort the end result by labels (XValue).
-        result.Sort(new ChartDataStringDoubleComparer());
+        result.Sort((a, b) => a.Tag.CompareTo(b.Tag));
         return result;
     }
 

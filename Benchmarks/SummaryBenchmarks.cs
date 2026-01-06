@@ -26,7 +26,7 @@ public class SummaryBenchmarks
         _consumer = new BenchmarkDotNet.Engines.Consumer();
     }
 
-    // [Benchmark]
+    [Benchmark]
     public Website.Components.Pages.Summary Constructor()
     {
         return new Website.Components.Pages.Summary(_rides);
