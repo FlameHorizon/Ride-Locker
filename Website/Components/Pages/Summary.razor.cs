@@ -140,7 +140,7 @@ public partial class Summary
             {
                 result.Add(new ChartData<string, double>()
                 {
-                    XValue = year.ToString() + "-" + (month < 10 ? "0" : "") + month.ToString(),
+                    XValue = (year < 10 ? "0" : "") + year.ToString() + "-" + (month < 10 ? "0" : "") + month.ToString(),
                     YValue = ride.Distance,
                     Tag = numericKey
                 });
@@ -187,7 +187,8 @@ public partial class Summary
             {
                 var fna = new FastNumericAverageDouble();
                 fna.Add(ride.AvgSpeed);
-                temp.Add((year.ToString() + "-" + (month < 10 ? "0" : "") + month.ToString(), fna, numericKey));
+                temp.Add(((year < 10 ? "0" : "") + year.ToString() + "-"
+                        + (month < 10 ? "0" : "") + month.ToString(), fna, numericKey));
             }
         }
 
