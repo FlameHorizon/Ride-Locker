@@ -67,8 +67,10 @@ public partial class Upload
         // PERF: Counters
         var sw = new Stopwatch();
         sw.Start();
+
         _logger.LogDebug("Loading {0} files.", count);
         List<Ride> rides = [];
+
         foreach (IBrowserFile file in e.GetMultipleFiles(count))
         {
             var serializer = new XmlSerializer(typeof(Gpx));
@@ -91,9 +93,14 @@ public partial class Upload
         await using AppDbContext db = await _dbContextFactory.CreateDbContextAsync();
         db.Rides.AddRange(rides);
         await db.SaveChangesAsync();
+
+        // Invalidate cache which stores rides.
         _cache.Remove("rides");
         sw.Stop();
+
         _logger.LogDebug("Took {0} ms to process {1} files.", sw.ElapsedMilliseconds, count);
+
+        // Update flag so that 'Done' message can be displayed.
         _uploadDone = true;
     }
 
@@ -130,6 +137,7 @@ public partial class Upload
         int fastAccelerationCount = 0;
         int fastDecelerationCount = 0;
         DateTime dtPrev = trackPoints[0].Time;
+
         // NOTE: First value might be also null.
         double? speedPrev = trackPoints[0].Speed;
 
