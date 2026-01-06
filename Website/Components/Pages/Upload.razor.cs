@@ -64,16 +64,18 @@ public partial class Upload
             }
         }
 
-        // PERF: Counters
+        // Counters
         var sw = new Stopwatch();
         sw.Start();
 
         _logger.LogDebug("Loading {0} files.", count);
         List<Ride> rides = [];
 
+        var serializer = new XmlSerializer(typeof(Gpx));
         foreach (IBrowserFile file in e.GetMultipleFiles(count))
         {
-            var serializer = new XmlSerializer(typeof(Gpx));
+            // NOTE: Wierd things are happening when I declare stream outside of the loop.
+            // I've tried to flush it at the end of each iteraction but it hangs.
             var ms = new MemoryStream();
             await file.OpenReadStream(MAX_FILE_SIZE_BYTES).CopyToAsync(ms);
 
@@ -90,15 +92,26 @@ public partial class Upload
             rides.Add(ride);
         }
 
+        _logger.LogDebug("Took {0} ms to process files.", sw.ElapsedMilliseconds);
+        sw.Restart();
+
         await using AppDbContext db = await _dbContextFactory.CreateDbContextAsync();
-        db.Rides.AddRange(rides);
-        await db.SaveChangesAsync();
+
+        // Synchronous = Off: Tells SQLite not to wait for the disk to physically acknowledge the write before moving on.
+        // Journal Mode = WAL (Write-Ahead Logging): Allows concurrent reads and much faster writes.
+        await db.Database.ExecuteSqlRawAsync("PRAGMA synchronous = OFF;");
+        await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode = WAL;");
+
+        await db.Rides.AddRangeAsync(rides);
+        int recordCount = await db.SaveChangesAsync();
+
+        _logger.LogDebug("Took {0} ms to insert {1} records into database.", sw.ElapsedMilliseconds, recordCount);
+        sw.Restart();
 
         // Invalidate cache which stores rides.
         _cache.Remove("rides");
         sw.Stop();
-
-        _logger.LogDebug("Took {0} ms to process {1} files.", sw.ElapsedMilliseconds, count);
+        _logger.LogDebug("Took {0} ms to clear cache.", sw.ElapsedMilliseconds);
 
         // Update flag so that 'Done' message can be displayed.
         _uploadDone = true;
