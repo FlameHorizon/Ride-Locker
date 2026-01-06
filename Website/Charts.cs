@@ -368,10 +368,28 @@ public static class Charts
 public class ChartData<TX>
 {
     public TX XValue { get; set; }
+
+    // Define empty constructor to not break code which isn't used a safer option
+    // with paramterized constr.
+    public ChartData() { }
+
+    public ChartData(TX xValue)
+    {
+        XValue = xValue;
+    }
 }
 
 public class ChartData<TX, TY>
 {
     public TX XValue { get; set; }
     public TY YValue { get; set; }
+    public int Tag { get; set; }
+
+    public ChartData() { }
+
+    public ChartData(TX xValue, TY yValue)
+    {
+        XValue = xValue;
+        YValue = yValue;
+    }
 }

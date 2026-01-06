@@ -21,6 +21,8 @@ public partial class Summary
     private readonly ILogger<Summary> _logger;
     private readonly IMemoryCache? _cache;
 
+    public Summary() { }
+
     // NOTE: This empty constructor is needed for the DI.
     // Without it, Dependency resolver would pick second constrcutor (Summary(IEnumerable<Ride>))
     // and fail with message:
@@ -104,56 +106,49 @@ public partial class Summary
         return result;
     }
 
-    private static List<ChartData<string, double>> CreateDistanceOverMonthsData(
+    public static List<ChartData<string, double>> CreateDistanceOverMonthsData(
       Ride[] rides)
     {
         if (rides.Length == 0) return [];
 
-        var result = new List<ChartData<string, double>>();
+        var result = new List<ChartData<string, double>>(24);
+        IFormatProvider formatProvider = CultureInfo.CurrentCulture;
         foreach (Ride ride in rides)
         {
             if (ride.TrackPoints.Count == 0) continue;
 
-            bool found = false;
             int index = -1;
 
-            IFormatProvider formatProvider = CultureInfo.CurrentCulture;
-
-            string year = ride.Start.Year.ToString(formatProvider);
-            string month = ride.Start.Month.ToString(formatProvider);
-            string key = "";
-
-            if (year.Length == 1) key += "0";
-            key += year + "-";
-
-            if (month.Length == 1) key += "0";
-            key += month;
+            // Create a numeric key (YYYYMM). NO STRINGS YET.
+            int year = ride.Start.Year;
+            int month = ride.Start.Month;
+            int numericKey = (year * 100) + month;
 
             // Serach for the label in data set.
             for (int i = 0; i < result.Count; i++)
             {
-                if (result[i].XValue == key)
+                if (result[i].Tag == numericKey)
                 {
-                    found = true;
                     index = i;
                     break;
                 }
-                found = false;
-                index = -1;
             }
 
             // If found, update distance value. Otherwise add new label.
-            if (found) result[index].YValue += ride.Distance;
+            if (index != -1) result[index].YValue += ride.Distance;
             else
             {
                 result.Add(new ChartData<string, double>()
                 {
-                    XValue = key,
-                    YValue = ride.Distance
+                    XValue = year.ToString() + "-" + (month < 10 ? "0" : "") + month.ToString(),
+                    YValue = ride.Distance,
+                    Tag = numericKey
                 });
             }
         }
 
+        // Sort the end result by labels (XValue).
+        result.Sort((a, b) => a.Tag.CompareTo(b.Tag));
         return result;
     }
 
@@ -215,6 +210,8 @@ public partial class Summary
             });
         }
 
+        // Sort the end result by labels (XValue).
+        result.Sort(new ChartDataStringDoubleComparer());
         return result;
     }
 
