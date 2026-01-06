@@ -106,107 +106,75 @@ public partial class Upload
 
     public static Ride ConvertToRide(Gpx gpx)
     {
-        List<TrackPoint> trackPoints = new List<TrackPoint>(gpx.Trk.Trkseg.Trkpt.Count);
-        foreach (Trkpt trk in gpx.Trk.Trkseg.Trkpt)
+        var trkpts = gpx.Trk.Trkseg.Trkpt;
+        int count = trkpts.Count;
+        if (count == 0) return new Ride();
+
+        // 1. Pre-size the list to avoid resizing overhead
+        List<TrackPoint> trackPoints = new List<TrackPoint>(count);
+
+        // Initialize stats with the first point data
+        var firstTrk = trkpts[0];
+        double elePrev = firstTrk.Ele;
+        double latPrev = firstTrk.Lat;
+        double lonPrev = firstTrk.Lon;
+        DateTime dtPrev = firstTrk.Time;
+        double speedPrev = firstTrk.Extensions?.Speed ?? 0;
+
+        double elevationGain = 0, elevationLoss = firstTrk.Ele;
+        double maxSpeed = double.MinValue, sumSpeed = 0;
+        int fastAcc = 0, fastDec = 0;
+
+        // 2. Single loop for conversion and calculation
+        foreach (var trk in trkpts)
         {
-            trackPoints.Add(new TrackPoint()
+            var currentSpeed = trk.Extensions?.Speed ?? 0;
+            var tp = new TrackPoint
             {
                 Elevation = trk.Ele,
                 Hdop = trk.Hdop,
                 Latitude = trk.Lat,
                 Longitude = trk.Lon,
-                Speed = trk.Extensions is null ? 0 : trk.Extensions.Speed,
+                Speed = currentSpeed,
                 Time = trk.Time
-            });
-        }
+            };
+            trackPoints.Add(tp);
 
-        int trackPointCount = trackPoints.Count;
-
-        DateTime start = trackPoints[0].Time;
-        DateTime end = trackPoints[trackPointCount - 1].Time;
-
-        double elevationGain = 0.0d;
-        double elevationLoss = trackPoints[0].Elevation;
-        double elePrev = trackPoints[0].Elevation;
-        double maxSpeed = double.MinValue;
-
-        double latPrev = trackPoints[0].Latitude;
-        double lonPrev = trackPoints[0].Longitude;
-        double distance = 0.0d;
-
-        int fastAccelerationCount = 0;
-        int fastDecelerationCount = 0;
-        DateTime dtPrev = trackPoints[0].Time;
-
-        // NOTE: First value might be also null.
-        double? speedPrev = trackPoints[0].Speed;
-
-        double sumSpeed = 0.0d;
-
-        for (int i = 0; i < trackPoints.Count; i++)
-        {
-            double dtSec = (trackPoints[i].Time - dtPrev).TotalSeconds;
+            // Physics/Stats calculations
+            double dtSec = (tp.Time - dtPrev).TotalSeconds;
             if (dtSec > 0)
             {
-                double speedDelta = (trackPoints[i].Speed - speedPrev.Value) / 3.6 / dtSec;
-                if (speedDelta > 2.0d)
-                {
-                    fastAccelerationCount++;
-                }
-                else if (speedDelta < -2.0d)
-                {
-                    fastDecelerationCount++;
-                }
+                double accel = (currentSpeed - speedPrev) / 3.6 / dtSec;
+                if (accel > 2.0d) fastAcc++;
+                else if (accel < -2.0d) fastDec++;
             }
 
-            dtPrev = trackPoints[i].Time;
-            speedPrev = trackPoints[i].Speed;
+            maxSpeed = Math.Max(maxSpeed, currentSpeed);
+            sumSpeed += currentSpeed;
 
-            // Speed and max speed.
-            // NOTE: There are cases where speed value is not available.
-            // Right now, to make visible I'm putting -1 as value.
-            // In real case it would make more sense to copy previous data point.
+            double eleDiff = elePrev - tp.Elevation;
+            if (eleDiff > 0.0d) elevationGain += eleDiff;
+            else elevationLoss -= eleDiff;
 
-            maxSpeed = Math.Max(maxSpeed, trackPoints[i].Speed);
-            sumSpeed += trackPoints[i].Speed;
-
-            // Elevation gain and loss.
-            double diff = elePrev - trackPoints[i].Elevation;
-            if (diff > 0.0d)
-            {
-                elevationGain += diff;
-            }
-            else
-            {
-                elevationLoss -= diff;
-            }
-            elePrev = trackPoints[i].Elevation;
-
-            // Distnace
-            distance += Geo.HaversineDistance(
-                latPrev,
-                lonPrev,
-                trackPoints[i].Latitude,
-                trackPoints[i].Longitude);
-            latPrev = trackPoints[i].Latitude;
-            lonPrev = trackPoints[i].Longitude;
+            // Update "Prev" values
+            elePrev = tp.Elevation;
+            latPrev = tp.Latitude;
+            lonPrev = tp.Longitude;
+            dtPrev = tp.Time;
+            speedPrev = currentSpeed;
         }
 
-        double avgSpeed = sumSpeed / trackPointCount;
-
-        var ride = new Ride
+        return new Ride
         {
-            Start = start,
-            End = end,
+            Start = trkpts[0].Time,
+            End = trkpts[count - 1].Time,
             ElevationGain = elevationGain,
             ElevationLoss = elevationLoss,
-            FastAccelerationCount = fastAccelerationCount,
-            FastDecelerationCount = fastDecelerationCount,
+            FastAccelerationCount = fastAcc,
+            FastDecelerationCount = fastDec,
             MaxSpeed = maxSpeed,
-            TrackPoints = trackPoints
+            TrackPoints = trackPoints,
         };
-
-        return ride;
     }
 
     private static double GetElevationLoss(List<Trkpt> points)
