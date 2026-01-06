@@ -17,6 +17,7 @@ public partial class Upload
     private readonly ILogger<Upload> _logger;
     private readonly IMemoryCache _cache;
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
+    private bool _uploadDone = false;
 
     public Upload(
         ILogger<Upload> logger,
@@ -28,7 +29,6 @@ public partial class Upload
         _dbContextFactory = dbContextFactory;
     }
 
-    private bool _done = false;
     private async Task LoadFiles(InputFileChangeEventArgs e)
     {
         const int MAX_FILE_COUNT = 10;
@@ -94,7 +94,7 @@ public partial class Upload
         _cache.Remove("rides");
         sw.Stop();
         _logger.LogDebug("Took {0} ms to process {1} files.", sw.ElapsedMilliseconds, count);
-        _done = true;
+        _uploadDone = true;
     }
 
     public static Ride ConvertToRide(Gpx gpx)
