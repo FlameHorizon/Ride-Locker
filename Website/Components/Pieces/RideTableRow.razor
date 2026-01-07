@@ -97,8 +97,8 @@
 
     using Image<Rgba32> image = new(imageSize, imageSize);
     image.Mutate(x => {
-      x.Fill(Color.White);
-      x.DrawLine(Color.Black, 1f, points.ToArray());
+      x.Fill(Color.Transparent);
+      x.DrawLine(Color.White, 1f, points.ToArray());
     });
 
     // Absolute path allows to manage files on the system, whereas 
