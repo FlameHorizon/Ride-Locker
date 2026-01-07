@@ -8,8 +8,11 @@
 
 @inject IWebHostEnvironment Env
 
-<td class="align-middle">
-  <img class="d-inline-block" src="@CreateIcon()"/>
+@* I don't know how else set column to shrink to size of the image. *@
+<td class="align-middle" style="width:1%">
+    <a class="d-inline-block" href="@($"/ride-details/{Ride.Id}")">
+        <img src="@CreateIcon()" width="50" height="50"/>
+    </a>
 </td>
 <td>
   <ul class="list-inline mb-0">
