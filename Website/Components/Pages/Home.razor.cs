@@ -43,6 +43,7 @@ public partial class Home
                     .ToArray();
             }
         );
+
         _logger.LogDebug("Took {0} ms to query database.", sw.ElapsedMilliseconds);
         sw.Restart();
 

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Components.Forms;
+using EFCore.BulkExtensions;
 
 namespace Website.Components.Pages;
 
@@ -97,15 +98,44 @@ public partial class Upload
 
         await using AppDbContext db = await _dbContextFactory.CreateDbContextAsync();
 
-        // Synchronous = Off: Tells SQLite not to wait for the disk to physically acknowledge the write before moving on.
-        // Journal Mode = WAL (Write-Ahead Logging): Allows concurrent reads and much faster writes.
-        await db.Database.ExecuteSqlRawAsync("PRAGMA synchronous = OFF;");
-        await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode = WAL;");
+        // NOTE: Since EFCore.BulkExtensions does not support bulk insertion of graph objects
+        // insertion has to be done in two passes. First, add parents and to all childrens.
+        // This requires two-step process for inserting rides and track points.
+        // More manuall work.
 
-        await db.Rides.AddRangeAsync(rides);
-        int recordCount = await db.SaveChangesAsync();
+        await using var transaction = await db.Database.BeginTransactionAsync();
 
-        _logger.LogDebug("Took {0} ms to insert {1} records into database.", sw.ElapsedMilliseconds, recordCount);
+        _logger.LogDebug("Attempting to insert {0} rides...", rides.Count);
+        await db.BulkInsertAsync(rides, o => o.SetOutputIdentity = true);
+
+        // Make sure Id of the ride has changed from defualt.
+        if (rides[0].Id == 0)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogWarning("Attempted to insert rides but Id has not been updated.");
+            return;
+        }
+
+        // Insert track points as well.
+        List<TrackPoint> allTrackPoints = [];
+        foreach (var ride in rides)
+        {
+            foreach (var trackPoint in ride.TrackPoints)
+            {
+                trackPoint.RideId = ride.Id;
+                allTrackPoints.Add(trackPoint);
+            }
+        }
+
+        _logger.LogDebug("Attempting to insert {0} track points...", allTrackPoints.Count);
+        await db.BulkInsertAsync(allTrackPoints);
+
+        await transaction.CommitAsync();
+        _logger.LogDebug(
+            "Took {0} ms to insert {1} records into database.",
+            sw.ElapsedMilliseconds,
+            rides.Count + allTrackPoints.Count);
+
         sw.Restart();
 
         // Invalidate cache which stores rides.
@@ -189,35 +219,4 @@ public partial class Upload
             TrackPoints = trackPoints,
         };
     }
-
-    private static double GetElevationLoss(List<Trkpt> points)
-    {
-        double res = 0.0;
-        for (int i = 1; i < points.Count; i++)
-        {
-            double diff = points[i].Ele - points[i - 1].Ele;
-            if (diff < 0.0)
-            {
-                res += diff;
-            }
-        }
-
-        return res;
-    }
-
-    private static double GetElevationGain(List<Trkpt> points)
-    {
-        double res = 0.0;
-        for (int i = 1; i < points.Count; i++)
-        {
-            double diff = points[i].Ele - points[i - 1].Ele;
-            if (diff > 0.0)
-            {
-                res += diff;
-            }
-        }
-
-        return res;
-    }
-
 }

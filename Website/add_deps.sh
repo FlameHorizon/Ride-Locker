@@ -8,3 +8,5 @@ dotnet add package SixLabors.ImageSharp.Drawing --version 2.1.7
 dotnet add package Syncfusion.Blazor.Charts --version 31.2.2
 dotnet add package ScottPlot.Blazor --version 5.1.57
 dotnet add package Microsoft.Extensions.Caching.Memory --version 10.0.1
+dotnet add package EFCore.BulkExtensions.MIT --version 10.22.0
+dotnet add package SQLitePCLRaw.bundle_e_sqlite3 --version 3.0.2

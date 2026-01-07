@@ -3,8 +3,6 @@ using Website.Components;
 using Website.Data;
 using Syncfusion.Blazor;
 using Syncfusion.Licensing;
-using Website.Components.Pages;
-using Microsoft.Extensions.Caching.Memory;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +28,10 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
   options.UseSqlite(
     builder.Configuration.GetConnectionString("AppDbContext") ??
     throw new InvalidOperationException("Connection string 'AppDbContext' not found.")));
+
+// For EFCore.BulkExtensions and sqlite3 there is a need for additional reference
+// and this call below.
+SQLitePCL.Batteries.Init();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 

@@ -44,11 +44,12 @@
     return $"{ts.Seconds} seconds ago";
   }
 
+// Should be GetOrCreateIcon
   private string CreateIcon() {
   
     List<TrackPoint> track = Ride.TrackPoints;
 
-    if (track.Count == 0) {
+    if (track.Any() == false) {
       Logger.LogWarning("There are not track points for ride {0} id. Can't create icon.", Ride.Id);
       return "";
     }
