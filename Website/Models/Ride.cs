@@ -50,4 +50,9 @@ public class Ride
     /// Set of track points recorded during the ride.
     /// </summary>
     public List<TrackPoint> TrackPoints { get; set; } = [];
+
+    /// <summary>
+    /// Represents the name of the file uploaded with extension.
+    /// </summary>
+    public string FullName { get; internal set; } = "";
 }

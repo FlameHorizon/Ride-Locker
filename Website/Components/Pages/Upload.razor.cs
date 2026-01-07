@@ -6,6 +6,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Components.Forms;
 using EFCore.BulkExtensions;
+using System.Text.RegularExpressions;
 
 namespace Website.Components.Pages;
 
@@ -90,6 +91,9 @@ public partial class Upload
             }
 
             var ride = ConvertToRide(gpx);
+
+            // Separetly, add file name and extension to the ride.
+            ride.FullName = SanitizeFileName(file.Name);
             rides.Add(ride);
         }
 
@@ -218,5 +222,25 @@ public partial class Upload
             MaxSpeed = maxSpeed,
             TrackPoints = trackPoints,
         };
+    }
+
+    private static string SanitizeFileName(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName)) return "unknown_file";
+
+        // 1. Remove path information
+        string nameOnly = Path.GetFileName(fileName);
+
+        // 2. Replace any character that is NOT a letter, digit, dot, hyphen, or underscore
+        string cleanName = Regex.Replace(nameOnly, @"[^a-zA-Z0-9\.\-_]", "_");
+
+        // 3. Optional: Truncate length to prevent UI overflow (e.g., 50 chars)
+        if (cleanName.Length > 50)
+        {
+            string ext = Path.GetExtension(cleanName);
+            cleanName = cleanName.Substring(0, 40) + "..." + ext;
+        }
+
+        return cleanName;
     }
 }
