@@ -6,13 +6,32 @@
 {
     <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5);" tabindex="-1">
         <div class="modal-dialog">
-            <div class="modal-content">
+            <div class="modal-content shadow">
                 <div class="modal-header">
-                    <h5 class="modal-title">Upload to Ride Locker</h5>
-                    <button type="button" class="btn-close" @onclick="_uploadModalState.Close"/>
+                    <h5 class="modal-title">Upload File</h5>
+                    <button type="button" class="btn-close" @onclick="_uploadModalState.Close"></button>
                 </div>
                 <div class="modal-body">
-                    <InputFile OnChange="HandleFile" multiple accept=".gpx" class="form-control" />
+                    <InputFile OnChange="HandleFile" multiple accept=".gpx" class="form-control mb-3" />
+
+                    @if (_uploadModalState.TotalSize > 0)
+                    {
+                        var progress = (int)((_uploadModalState.BytesUploaded * 100) / _uploadModalState.TotalSize);
+                        
+                        <div class="progress mb-2" style="height: 20px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" 
+                                 style="width: @progress%">
+                                @progress%
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span>@((_uploadModalState.BytesUploaded / 1024.0 / 1024.0).ToString("F2")) MB / 
+                                  @((_uploadModalState.TotalSize / 1024.0 / 1024.0).ToString("F2")) MB</span>
+                            <span>@_uploadModalState.TransferSpeedKbs.ToString("N0") KB/s</span>
+                        </div>
+                    }
                 </div>
             </div>
         </div>

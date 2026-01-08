@@ -71,9 +71,11 @@ public partial class UploadModal
                     ext);
                 return;
             }
+
+            // Collect file sizes to display transfer metrics.
+            _uploadModalState.TotalSize += file.Size;
         }
 
-        // Counters
         var sw = new Stopwatch();
         sw.Start();
 
@@ -81,21 +83,36 @@ public partial class UploadModal
         List<Ride> rides = [];
 
         var serializer = new XmlSerializer(typeof(Gpx));
+
+        // NOTE: Here I'm working with progress bar data
+        // but this isn't really tracking speed of network transfer since
+        // I'm also processing data in memory which also take time.
+        double elapsedSeconds = sw.Elapsed.TotalSeconds;
         foreach (IBrowserFile file in e.GetMultipleFiles(count))
         {
             // NOTE: Wierd things are happening when I declare stream outside of the loop.
             // I've tried to flush it at the end of each iteraction but it hangs.
             var ms = new MemoryStream();
             await file.OpenReadStream(MAX_FILE_SIZE_BYTES).CopyToAsync(ms);
+            _uploadModalState.BytesUploaded += file.Size;
 
             ms.Position = 0;
             Gpx? gpx = serializer.Deserialize(ms) as Gpx;
+            elapsedSeconds = sw.Elapsed.TotalSeconds;
 
             if (gpx is null)
             {
                 _logger.LogWarning("Tried to deserailize file '{0}' into Gpx but got null as result. Aborting.", file.Name);
                 return;
             }
+
+            if (elapsedSeconds > 0.0)
+            {
+                _uploadModalState.TransferSpeedKbs = (_uploadModalState.BytesUploaded / 1024.0) / elapsedSeconds;
+            }
+
+            _uploadModalState.NotifyProgress();
+            StateHasChanged();
 
             var ride = ConvertToRide(gpx);
 
@@ -157,7 +174,7 @@ public partial class UploadModal
         // Close modal windown once upload is done.
         // TODO: Show toast pop up with "Upload completed" and ask to refresh the page.
         // Or maybe we can refresh webpage automatically?
-        _uploadModalState.Close();
+        //_uploadModalState.Close();
     }
 
     public static Ride ConvertToRide(Gpx gpx)
