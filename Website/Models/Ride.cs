@@ -43,7 +43,17 @@ public class Ride
     /// Elevation loss during the ride (in meters).
     /// </summary>
     public double ElevationLoss { get; set; }
+
+    /// <summary>
+    /// Number of fast accelerations during the ride.
+    /// Fast accelerations are defined as accelerations greater than 2.0 m/s².
+    /// </summary>
     public int FastAccelerationCount { get; set; }
+
+    /// <summary>
+    /// Number of fast decelerations during the ride.
+    /// Fast decelerations are defined as decelerations greater than 2.0 m/s².
+    /// </summary>
     public int FastDecelerationCount { get; set; }
 
     /// <summary>
