@@ -21,7 +21,10 @@ public partial class Summary
     private readonly ILogger<Summary> _logger;
     private readonly IMemoryCache? _cache;
 
-    public Summary() { }
+    public Summary()
+    {
+        _logger = NullLogger<Summary>.Instance;
+    }
 
     // NOTE: This empty constructor is needed for the DI.
     // Without it, Dependency resolver would pick second constrcutor (Summary(IEnumerable<Ride>))

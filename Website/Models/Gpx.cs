@@ -8,7 +8,7 @@ public class Metadata
 {
 
     [XmlElement(ElementName = "name")]
-    public string Name { get; set; }
+    public string Name { get; set; } = "";
 }
 
 [XmlRoot(ElementName = "trkpt", Namespace = "http://www.topografix.com/GPX/1/1")]
@@ -65,19 +65,19 @@ public class Gpx
 {
 
     [XmlElement(ElementName = "metadata")]
-    public Metadata Metadata { get; set; }
+    public Metadata Metadata { get; set; } = new();
 
     [XmlElement(ElementName = "trk")]
-    public Trk Trk { get; set; }
+    public Trk Trk { get; set; } = new();
 
     [XmlAttribute(AttributeName = "version")]
-    public string Version { get; set; }
+    public string Version { get; set; } = "";
 
     [XmlAttribute(AttributeName = "creator")]
-    public string Creator { get; set; }
+    public string Creator { get; set; } = "";
 
     [XmlText]
-    public string Text { get; set; }
+    public string Text { get; set; } = "";
 
 }
 
