@@ -1,0 +1,175 @@
+using SixLabors.ImageSharp.Drawing;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Metadata;
+using Path = System.IO.Path;
+
+namespace Website.Components.Pieces;
+
+using Microsoft.AspNetCore.Components;
+using Website.Models;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Drawing.Processing;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
+
+public partial class RideTableRow
+{
+    // NOTE: Property is automatically populated by the fact that this is 
+    // a required parameter.
+    [Parameter][EditorRequired] public Ride Ride { get; set; } = new();
+    private readonly ILogger<RideTableRow> _logger;
+    private readonly IWebHostEnvironment _env;
+
+    public RideTableRow(
+        ILogger<RideTableRow> logger,
+        IWebHostEnvironment env)
+    {
+        _logger = logger;
+        _env = env;
+    }
+
+    private string FormatTimeAgo(DateTime dt)
+    {
+        TimeSpan ts = DateTime.Now - dt;
+        if (ts.TotalDays > 1)
+        {
+            return $"{ts.Days} days ago";
+        }
+
+        if (ts.TotalHours > 1)
+        {
+            return $"{ts.Hours} hours ago";
+        }
+
+        if (ts.TotalMinutes > 1)
+        {
+            return $"{ts.Minutes} minutes ago";
+        }
+
+        return $"{ts.Seconds} seconds ago";
+    }
+
+    // Should be GetOrCreateIcon
+    private string CreateIcon()
+    {
+        List<TrackPoint> track = Ride.TrackPoints;
+
+        if (track.Any() == false)
+        {
+            _logger.LogWarning("There are not track points for ride {0} id. Can't create icon.", Ride.Id);
+            return "";
+        }
+
+        // Check, if icon already exists for this ride.
+        string storagePath = Path.Combine(_env.WebRootPath, "uploads", Ride.Id.ToString());
+        string iconPath = Path.Combine(storagePath, "icon.png");
+        if (File.Exists(iconPath))
+        {
+            return _env.GetRelativeWebPath(iconPath);
+        }
+
+        using var image = CreateImage(Ride);
+
+        // Absolute path allows to manage files on the system, whereas 
+        // relative path allows to display content on website.
+        if (Directory.Exists(storagePath) == false)
+        {
+            Directory.CreateDirectory(storagePath);
+        }
+
+        _logger.LogInformation("Saving icon at '{0}'", iconPath);
+        // NOTE: We know that file does not exist, we checked that at the beginning
+        // of the method.
+        File.Create(iconPath).Close();
+        image.SaveAsPng(iconPath, new PngEncoder());
+
+        string relPath = _env.GetRelativeWebPath(iconPath);
+        _logger.LogInformation("Relative path of the icon is '{0}'", relPath);
+        return relPath;
+    }
+
+    /// <summary>
+    /// User of this method is resposible for disposing the image.
+    /// </summary>
+    /// TODO: For shorter rides we can switch to drawing a line since they would look nicer.
+    public static Image<Rgba32> CreateImage(Ride ride)
+    {
+        List<TrackPoint> track = ride.TrackPoints;
+        double originLat = track.First().Latitude;
+        double originLon = track.First().Longitude;
+
+        // Compute grid indices relative to origin
+        IEnumerable<(double x, double y)> local = track
+            .Select(x => Geo.LatLonToLocal(x.Latitude, x.Longitude, originLat, originLon))
+            .ToList();
+
+        // Find bounding box to of the local values to center points
+        double minX = local.Min(p => p.x);
+        double maxX = local.Max(p => p.x);
+        double minY = local.Min(p => p.y);
+        double maxY = local.Max(p => p.y);
+
+        double width = maxX - minX;
+        double height = maxY - minY;
+
+        const int imageSize = 50;
+
+        // Scale so that the largest dimension fits in imageSize
+        double scale = width > height ? imageSize / width : imageSize / height;
+        double heightOffset = (imageSize - height * scale) / 2;
+
+        List<(int x, int y)> px = local.Select(p => (
+            x: (int)((p.x - minX) * scale),
+            y: (int)((p.y - minY) * scale + heightOffset)
+        )).ToList();
+
+        // Convert to PointF
+        List<PointF> points = new List<PointF>(px.Count / 2);
+
+        // Allows to eliminate count check.
+        points.Add(new PointF(px[0].x, px[0].y));
+
+        for (int i = 1; i < px.Count; i++)
+        {
+            var p = px[i];
+            var currentPoint = new PointF(p.x, p.y);
+
+            // Only add if it's different from the previous pixel
+            if (points[^1] != currentPoint)
+            {
+                points.Add(currentPoint);
+            }
+        }
+
+        // NOTE: Setting color as transparent during initialization and not filling image with it makes code run faster by 10% (97 -> 90)
+        // Also, we can skip a lot of overhead while setting up configuration with just 
+        // passing empty confing. Loding that, we can reduce time during cold start.
+        // But our image object will be kinda dumb. It will not know who to save itself
+        // as encoders for png, provided by defualt well be missing.
+        Image<Rgba32> image = new(new Configuration(), imageSize, imageSize, Color.Transparent);
+
+        // PERF: For performance reasons instead of drawing a line,
+        // I'm drawing each pixel individually since drawing a line
+        // which is smooth is much slower. Image will not look as nice,
+        // but the speed is better.
+        image.ProcessPixelRows(accessor =>
+        {
+            foreach (var p in points)
+            {
+                int x = (int)p.X;
+                int y = (int)p.Y;
+
+                if (x >= 0 && x < accessor.Width && y >= 0 && y < accessor.Height)
+                {
+                    // Get a reference to the specific row
+                    Span<Rgba32> pixelRow = accessor.GetRowSpan(y);
+
+                    // Set the pixel in that row
+                    pixelRow[x] = Color.White;
+                }
+            }
+        });
+
+        return image;
+    }
+}

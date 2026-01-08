@@ -9,6 +9,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-  </PropertyGroup>
+    </PropertyGroup>
 
+    <ItemGroup>
+      <None Update="./test_data/CreateIconBenchmarks/2025-12-25_14-51_czw..gpx">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
 </Project>
