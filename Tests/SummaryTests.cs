@@ -204,11 +204,11 @@ public class SummaryTests
 
         var first = s.SpeedOverMonthsData.First();
         Assert.Equal("01-01", first.XValue);
-        Assert.Equal(111.19492664455873, first.YValue * 3.6, 0.0001); // Converted into km/s
+        Assert.Equal(111.19492664455873, first.YValue, 0.0001); // Converted into km/s
 
         var second = s.SpeedOverMonthsData.Skip(1).First();
         Assert.Equal("01-02", second.XValue);
-        Assert.Equal(111.19492664455873 * 2, second.YValue * 3.6, 0.0001); // Converted into km/s
+        Assert.Equal(111.19492664455873 * 2, second.YValue, 0.0001); // Converted into km/s
     }
 
     [Fact]
