@@ -198,7 +198,7 @@ public partial class Summary
             result.Add(new ChartData<string, double>()
             {
                 XValue = item.Item1,
-                YValue = item.Item2.Average,
+                YValue = item.Item2.Average * 3.6,
                 Tag = item.Item3
             });
         }

@@ -19,7 +19,7 @@
     <li class="list-inline-item">
       <a href="@($"/ride-details/{Ride.Id}")">@Ride.FullName</a>
     </li>
-    <li class="list-inline-item">@(Ride.TrackPoints.Count + " points")</li>
+    <li class="list-inline-item">@(Math.Round(Ride.Distance, 2) + " km")</li>
   </ul>
   <p class="text-body-secondary mb-0">
     <time title="" datetime="@Ride.Start">@FormatTimeAgo(Ride.Start)</time>
