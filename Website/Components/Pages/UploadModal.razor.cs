@@ -40,7 +40,7 @@ public partial class UploadModal
 
     private async Task HandleFile(InputFileChangeEventArgs e)
     {
-        const int MAX_FILE_COUNT = 10;
+        const int MAX_FILE_COUNT = 50;
         int count = e.FileCount;
         if (count > MAX_FILE_COUNT)
         {
@@ -51,7 +51,7 @@ public partial class UploadModal
             return;
         }
 
-        const int MAX_FILE_SIZE_BYTES = 1024 * 1024 * 1; // 1MB
+        const int MAX_FILE_SIZE_BYTES = 1024 * 1024 * 5; // 5MB
         foreach (IBrowserFile file in e.GetMultipleFiles(count))
         {
             if (file.Size > MAX_FILE_SIZE_BYTES)
