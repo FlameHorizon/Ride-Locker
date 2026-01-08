@@ -1,0 +1,20 @@
+@rendermode InteractiveServer
+
+@implements IDisposable
+
+@if (_uploadModalState.IsVisible)
+{
+    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5);" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload to Ride Locker</h5>
+                    <button type="button" class="btn-close" @onclick="_uploadModalState.Close"/>
+                </div>
+                <div class="modal-body">
+                    <InputFile OnChange="HandleFile" multiple accept=".gpx" class="form-control" />
+                </div>
+            </div>
+        </div>
+    </div>
+}

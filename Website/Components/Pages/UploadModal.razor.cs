@@ -1,37 +1,44 @@
+using System.Diagnostics;
+using System.Text.RegularExpressions;
+using System.Xml.Serialization;
+using EFCore.BulkExtensions;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Website.Data;
 using Website.Models;
-using System.Xml.Serialization;
-using System.Diagnostics;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Components.Forms;
-using EFCore.BulkExtensions;
-using System.Text.RegularExpressions;
+using Website.Services;
 
 namespace Website.Components.Pages;
 
-public partial class Upload
+public partial class UploadModal
 {
-    // NOTE: Upload page has control over when cache should be invalidated.
-    // This is required since we want to allow user to see updated list of
-    // rides immediately after new rides are added.
-
-    private readonly ILogger<Upload> _logger;
+    private readonly UploadModalStateService _uploadModalState;
+    private readonly ILogger<UploadModal> _logger;
     private readonly IMemoryCache _cache;
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
-    private bool _uploadDone = false;
 
-    public Upload(
-        ILogger<Upload> logger,
+    public UploadModal(
+        UploadModalStateService uploadModalState,
+        ILogger<UploadModal> logger,
         IMemoryCache cache,
         IDbContextFactory<AppDbContext> dbContextFactory)
     {
+        _uploadModalState = uploadModalState;
         _logger = logger;
         _cache = cache;
         _dbContextFactory = dbContextFactory;
     }
 
-    private async Task LoadFiles(InputFileChangeEventArgs e)
+    protected override void OnInitialized()
+    {
+        // Everytime the state of the modal changes, re-render the page.
+        _uploadModalState.OnChanged += StateHasChanged;
+    }
+
+    public void Dispose() => _uploadModalState.OnChanged -= StateHasChanged;
+
+    private async Task HandleFile(InputFileChangeEventArgs e)
     {
         const int MAX_FILE_COUNT = 10;
         int count = e.FileCount;
@@ -147,8 +154,10 @@ public partial class Upload
         sw.Stop();
         _logger.LogDebug("Took {0} ms to clear cache.", sw.ElapsedMilliseconds);
 
-        // Update flag so that 'Done' message can be displayed.
-        _uploadDone = true;
+        // Close modal windown once upload is done.
+        // TODO: Show toast pop up with "Upload completed" and ask to refresh the page.
+        // Or maybe we can refresh webpage automatically?
+        _uploadModalState.Close();
     }
 
     public static Ride ConvertToRide(Gpx gpx)

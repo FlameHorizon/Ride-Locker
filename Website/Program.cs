@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Website.Components;
 using Website.Data;
+using Website.Services;
 using Syncfusion.Blazor;
 using Syncfusion.Licensing;
 
@@ -32,6 +33,9 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
 // For EFCore.BulkExtensions and sqlite3 there is a need for additional reference
 // and this call below.
 SQLitePCL.Batteries.Init();
+
+// Upload state service used for uploading gpx tracks to database.
+builder.Services.AddScoped<UploadModalStateService>();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
