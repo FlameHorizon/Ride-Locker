@@ -18,7 +18,7 @@ public class SummaryBenchmarks
         {
             FileStream stream = File.OpenRead(path);
             Gpx? gpx = serializer.Deserialize(stream) as Gpx;
-            Ride ride = Website.Components.Pages.Upload.ConvertToRide(gpx!);
+            Ride ride = Website.Components.Pages.UploadModal.ConvertToRide(gpx!);
             _rides.Add(ride);
         }
 

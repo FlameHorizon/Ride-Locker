@@ -23,6 +23,6 @@ public class UploadBenchmarks
     [Benchmark(Baseline = true)]
     public Ride ConvertSingleRide()
     {
-        return Upload.ConvertToRide(_gpx);
+        return UploadModal.ConvertToRide(_gpx);
     }
 }
