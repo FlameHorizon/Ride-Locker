@@ -5,8 +5,8 @@ public class SortBenchmarks
 {
     private const int N = 20;
     private const int Loops = 1_000_000; // Increase work per iteration
-    private int[][] _originalData;
-    private int[][] _workData;
+    private int[][] _originalData = [];
+    private int[][] _workData = [];
 
     [GlobalSetup]
     public void Setup()
