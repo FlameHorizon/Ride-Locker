@@ -37,6 +37,9 @@ public class Trkpt
 [XmlRoot(ElementName = "extensions", Namespace = "https://osmand.net/docs/technical/osmand-file-formats/osmand-gpx")]
 public class ExtensionsSpeed
 {
+    /// <summary
+    /// Speed in meters per second.
+    /// </summary>
     [XmlElement(ElementName = "speed")]
     public double Speed { get; set; }
 }

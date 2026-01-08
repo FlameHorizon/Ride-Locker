@@ -22,4 +22,10 @@
     <ProjectReference Include="..\Website\Website.csproj" />
   </ItemGroup>
 
+    <ItemGroup>
+        <None Update="./test_data/GpxToRideConvertion/2025-12-28_15-53_niedz..gpx">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
 </Project>

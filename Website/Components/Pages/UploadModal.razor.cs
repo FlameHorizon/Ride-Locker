@@ -192,23 +192,23 @@ public partial class UploadModal
         double latPrev = firstTrk.Lat;
         double lonPrev = firstTrk.Lon;
         DateTime dtPrev = firstTrk.Time;
-        double speedPrev = firstTrk.Extensions?.Speed ?? 0;
+        double speedMetersPerSecondPrev = firstTrk.Extensions?.Speed ?? 0;
 
         double elevationGain = 0, elevationLoss = firstTrk.Ele;
-        double maxSpeed = double.MinValue, sumSpeed = 0;
+        double speedMetersPerSecondMax = double.MinValue, sumSpeed = 0;
         int fastAcc = 0, fastDec = 0;
 
         // 2. Single loop for conversion and calculation
         foreach (var trk in trkpts)
         {
-            var currentSpeed = trk.Extensions?.Speed ?? 0;
+            var speedMetersPerSecondCurrent = trk.Extensions?.Speed ?? 0;
             var tp = new TrackPoint
             {
                 Elevation = trk.Ele,
                 Hdop = trk.Hdop,
                 Latitude = trk.Lat,
                 Longitude = trk.Lon,
-                Speed = currentSpeed,
+                Speed = speedMetersPerSecondCurrent,
                 Time = trk.Time
             };
             trackPoints.Add(tp);
@@ -217,13 +217,14 @@ public partial class UploadModal
             double dtSec = (tp.Time - dtPrev).TotalSeconds;
             if (dtSec > 0)
             {
-                double accel = (currentSpeed - speedPrev) / 3.6 / dtSec;
+                double accel = (speedMetersPerSecondCurrent - speedMetersPerSecondPrev) / dtSec;
                 if (accel > 2.0d) fastAcc++;
                 else if (accel < -2.0d) fastDec++;
             }
 
-            maxSpeed = Math.Max(maxSpeed, currentSpeed);
-            sumSpeed += currentSpeed;
+            speedMetersPerSecondMax = Math.Max(speedMetersPerSecondMax, speedMetersPerSecondCurrent);
+            // TODO: Remove variable below, does not need to be here.
+            sumSpeed += speedMetersPerSecondCurrent;
 
             double eleDiff = elePrev - tp.Elevation;
             if (eleDiff > 0.0d) elevationGain += eleDiff;
@@ -234,7 +235,7 @@ public partial class UploadModal
             latPrev = tp.Latitude;
             lonPrev = tp.Longitude;
             dtPrev = tp.Time;
-            speedPrev = currentSpeed;
+            speedMetersPerSecondPrev = speedMetersPerSecondCurrent;
         }
 
         return new Ride
@@ -245,7 +246,7 @@ public partial class UploadModal
             ElevationLoss = elevationLoss,
             FastAccelerationCount = fastAcc,
             FastDecelerationCount = fastDec,
-            MaxSpeed = maxSpeed,
+            MaxSpeed = speedMetersPerSecondMax,
             TrackPoints = trackPoints,
         };
     }
