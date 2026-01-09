@@ -62,7 +62,7 @@ public partial class Summary
         if (_cache is not null)
         {
             Ride[]? result = await _cache.GetOrCreateAsync(
-                "rides",
+                "tracks",
                 async entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);

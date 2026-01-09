@@ -51,7 +51,6 @@ public partial class Home
 
                 return await db.Rides
                     .AsNoTracking()
-                    .Include(x => x.TrackPoints)
                     .OrderByDescending(x => x.Start)
                     .ToArrayAsync();
             }
@@ -71,6 +70,7 @@ public partial class Home
         _rides = result;
         _rides.Sort((a, b) => b.Start.CompareTo(a.Start));
         UpdatePagination();
+
         _logger.LogDebug("Took {0} ms to prepare data. Size {1}", sw.ElapsedMilliseconds, _rides.Length);
         StateHasChanged();
     }

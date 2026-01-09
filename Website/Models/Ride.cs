@@ -32,7 +32,7 @@ public class Ride
     /// <summary>
     /// Distance (in kilometers) covered over the ride.
     /// </summary>
-    public double Distance => Geo.HaversineDistance(TrackPoints);
+    public double Distance { get; set; }
 
     /// <summary>
     /// Elevation gained during the ride (in meters).

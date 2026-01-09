@@ -166,8 +166,10 @@ public partial class UploadModal
 
         sw.Restart();
 
-        // Invalidate cache which stores rides.
+        // Invalidate cache which stores rides and track points.
         _cache.Remove("rides");
+        _cache.Remove("tracks");
+
         sw.Stop();
         _logger.LogDebug("Took {0} ms to clear cache.", sw.ElapsedMilliseconds);
 
@@ -247,6 +249,7 @@ public partial class UploadModal
             FastAccelerationCount = fastAcc,
             FastDecelerationCount = fastDec,
             MaxSpeed = speedMetersPerSecondMax,
+            Distance = Geo.HaversineDistance(trackPoints),
             TrackPoints = trackPoints,
         };
     }

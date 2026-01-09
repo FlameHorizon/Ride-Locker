@@ -6,6 +6,8 @@ using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Path = System.IO.Path;
+using Microsoft.EntityFrameworkCore;
+using Website.Data;
 
 public partial class RideTableRow
 {
@@ -14,14 +16,17 @@ public partial class RideTableRow
     [Parameter][EditorRequired] public Ride Ride { get; set; } = new();
     private readonly ILogger<RideTableRow> _logger;
     private readonly IWebHostEnvironment _env;
+    private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private string _iconPath = "";
 
     public RideTableRow(
         ILogger<RideTableRow> logger,
-        IWebHostEnvironment env)
+        IWebHostEnvironment env,
+        IDbContextFactory<AppDbContext> dbContextFactory)
     {
         _logger = logger;
         _env = env;
+        _dbContextFactory = dbContextFactory;
     }
 
     protected override async Task OnInitializedAsync()
@@ -53,14 +58,6 @@ public partial class RideTableRow
     // Should be GetOrCreateIcon
     private async Task<string> CreateIcon()
     {
-        List<TrackPoint> track = Ride.TrackPoints;
-
-        if (track.Any() == false)
-        {
-            _logger.LogWarning("There are not track points for ride {0} id. Can't create icon.", Ride.Id);
-            return "";
-        }
-
         // Check, if icon already exists for this ride.
         string storagePath = Path.Combine(_env.WebRootPath, "uploads", Ride.Id.ToString());
         string iconPath = Path.Combine(storagePath, "icon.png");
@@ -74,7 +71,20 @@ public partial class RideTableRow
         _logger.LogDebug("Took {0} ms to check if file exists.", sw.ElapsedMilliseconds);
         sw.Restart();
 
-        using var image = CreateImage(Ride);
+        // NOTE: Since track points are not collected for rides on home page,
+        // we need to fetch them from database for each ride which needs it
+        // to create the icon. I'm not donwloading them along with rides
+        // because track points not on Home page.
+        using var db = await _dbContextFactory.CreateDbContextAsync();
+        List<TrackPoint> trackPoints = await db.TrackPoints
+            .AsNoTracking()
+            .Where(x => x.RideId == Ride.Id)
+            .ToListAsync();
+
+        _logger.LogDebug("Took {0} ms to query database.", sw.ElapsedMilliseconds);
+        sw.Restart();
+
+        using var image = CreateImage(trackPoints);
 
         _logger.LogDebug("Took {0} ms to create an icon image.", sw.ElapsedMilliseconds);
         sw.Restart();
@@ -106,7 +116,11 @@ public partial class RideTableRow
     /// TODO: For shorter rides we can switch to drawing a line since they would look nicer.
     public static Image<Rgba32> CreateImage(Ride ride)
     {
-        List<TrackPoint> track = ride.TrackPoints;
+        return CreateImage(ride.TrackPoints);
+    }
+
+    public static Image<Rgba32> CreateImage(IEnumerable<TrackPoint> track)
+    {
         double originLat = track.First().Latitude;
         double originLon = track.First().Longitude;
 
