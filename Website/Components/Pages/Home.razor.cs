@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace Website.Components.Pages;
 
 // TODO: Add pagination.
-public partial class Home
+public partial class Home : IDisposable
 {
     private Ride[] _rides = [];
     private readonly ILogger<Home> _logger;
@@ -36,6 +36,26 @@ public partial class Home
 
     protected override async Task OnInitializedAsync()
     {
+        _cacheSignal.OnCacheInvalidated += HandleCacheInvalidated;
+    }
+
+    private async void HandleCacheInvalidated()
+    {
+        _logger.LogDebug("Cache has been invalidated. Refreshing page.");
+        var sw = Stopwatch.StartNew();
+        _totalCount = await _cache.GetOrCreateAsync("rides_total_count", async entry =>
+        {
+            _logger.LogDebug("Cache miss for rides_total_count. Fetching from DB...");
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+            await using var db = await _dbContextFactory.CreateDbContextAsync();
+            return await db.Rides.CountAsync();
+        });
+
+        _totalPages = (int)Math.Ceiling((double)_totalCount / _pageSize);
+        _pagedRides = await GetRides();
+
+        StateHasChanged();
+        _logger.LogDebug("Took {0} ms to get data for page.", sw.ElapsedMilliseconds);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -95,5 +115,10 @@ public partial class Home
         var sw = Stopwatch.StartNew();
         _pagedRides = await GetRides();
         _logger.LogDebug("Took {0} ms to get data for page.", sw.ElapsedMilliseconds);
+    }
+
+    public void Dispose()
+    {
+        _cacheSignal.OnCacheInvalidated -= HandleCacheInvalidated;
     }
 }

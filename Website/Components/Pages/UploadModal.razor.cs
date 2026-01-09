@@ -194,9 +194,9 @@ public partial class UploadModal
         //_logger.LogDebug("Size of the cache before invalidating: {0}", before);
 
         // Invalidate cache which stores rides and track points.
-        _cacheSignal.Reset();
         _cache.Remove("tracks");
         _cache.Remove("rides_total_count");
+        _cacheSignal.Reset();
 
         sw.Stop();
         _logger.LogDebug("Took {0} ms to clear cache.", sw.ElapsedMilliseconds);
@@ -204,7 +204,7 @@ public partial class UploadModal
         // Close modal windown once upload is done.
         // TODO: Show toast pop up with "Upload completed" and ask to refresh the page.
         // Or maybe we can refresh webpage automatically?
-        //_uploadModalState.Close();
+        _uploadModalState.Close();
     }
 
     public static Ride ConvertToRide(Gpx gpx)

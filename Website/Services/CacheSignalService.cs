@@ -1,7 +1,6 @@
 
 using Microsoft.Extensions.Primitives;
 
-
 /// <summary>
 /// Allows to pair cache entry with cancellation token.
 /// This way I can invalidate cache when new data is uploaded.
@@ -10,6 +9,9 @@ public class CacheSignalService
 {
     private CancellationTokenSource _resetToken = new();
     private readonly ILogger<CacheSignalService> _logger;
+
+    // Notify subscribes that cachce has changed.
+    public event Action? OnCacheInvalidated;
 
     public CacheSignalService(ILogger<CacheSignalService> logger)
     {
@@ -30,5 +32,8 @@ public class CacheSignalService
 
         // Recreate token to allow new cache values to be linked.
         _resetToken = new();
+
+        // Tell the world that cache has been invalidated.
+        OnCacheInvalidated?.Invoke();
     }
 }
