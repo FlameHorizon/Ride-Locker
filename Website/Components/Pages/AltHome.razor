@@ -100,16 +100,16 @@
                                             <div class="d-flex align-items-center">
                                                 <div class="progress w-100 me-2" style="height: 8px; border-radius: 4px;">
                                                     @{
-                                                    double smoothnessScore = ride.SmoothnessScore;
-                                                    if (smoothnessScore > 80.0d) 
-                                                    {
-                                                        <div class="progress-bar bg-success" style="width: @(smoothnessScore)%"></div>
-                                                    } 
-                                                    else 
-                                                    {
-                                                        <div class="progress-bar bg-warning" style="width: @(smoothnessScore)%"></div>
+                                                        double smoothnessScore = ride.SmoothnessScore;
+                                                        if (smoothnessScore > 80.0d) 
+                                                        {
+                                                            <div class="progress-bar bg-success" style="width: @(smoothnessScore)%"></div>
+                                                        } 
+                                                        else 
+                                                        {
+                                                            <div class="progress-bar bg-warning" style="width: @(smoothnessScore)%"></div>
+                                                        }
                                                     }
-                                                }
                                                 </div>
                                                 <span class="small fw-bold">@(smoothnessScore)%</span>
                                             </div>
