@@ -91,6 +91,5 @@ public partial class Home
     {
         _currentPage = newPage;
         UpdatePagination();
-        StateHasChanged();
     }
 }
