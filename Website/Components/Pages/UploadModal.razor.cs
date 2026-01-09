@@ -47,7 +47,7 @@ public partial class UploadModal
         int count = e.FileCount;
         if (count > MAX_FILE_COUNT)
         {
-            // TODO: Implement information for user that the limit is 10.
+            _uploadModalState.ErrorMessage = $"You can only upload up to {MAX_FILE_COUNT} files at once.";
             _logger.LogWarning("User attempted to upload {0} files, but count limit is {1}.",
                 count,
                 MAX_FILE_COUNT);
@@ -59,6 +59,7 @@ public partial class UploadModal
         {
             if (file.Size > MAX_FILE_SIZE_BYTES)
             {
+                _uploadModalState.ErrorMessage = $"File '{file.Name}' exceeds the 5MB limit.";
                 _logger.LogWarning("User attempted to upload file '{0}' of size {1}, but size limit is {2}. Aborting.",
                     file.Name,
                     file.Size,
@@ -69,6 +70,7 @@ public partial class UploadModal
             string ext = Path.GetExtension(file.Name).ToLower();
             if (ext != ".gpx")
             {
+                _uploadModalState.ErrorMessage = $"'{file.Name}' is not a valid GPX file.";
                 _logger.LogWarning("User attempted to upload file '{0}' with extension '{1}', but expected extension is '.gpx'. Aborting.",
                     file.Name,
                     ext);
@@ -90,6 +92,9 @@ public partial class UploadModal
         // NOTE: Here I'm working with progress bar data
         // but this isn't really tracking speed of network transfer since
         // I'm also processing data in memory which also take time.
+        //
+        // Another thing is that if user selects multiple files and one of them
+        // fails to process, we reject entire upload, even files which are correct.
         double elapsedSeconds = sw.Elapsed.TotalSeconds;
         foreach (IBrowserFile file in e.GetMultipleFiles(count))
         {
@@ -100,12 +105,26 @@ public partial class UploadModal
             _uploadModalState.BytesUploaded += file.Size;
 
             ms.Position = 0;
-            Gpx? gpx = serializer.Deserialize(ms) as Gpx;
+            Gpx? gpx = null;
+            try
+            {
+                // In case of error, we want to show the error message to the user.
+                // User might want to any upload file which matches .gpx extension.
+                gpx = serializer.Deserialize(ms) as Gpx;
+            }
+            catch (Exception ex)
+            {
+                _uploadModalState.ErrorMessage = $"Failed to import file '{file.Name}'. Nothing was uploaded.";
+                _logger.LogError(ex, "Failed to deserialize file '{0}' into Gpx object.", file.Name);
+                return;
+            }
+
             elapsedSeconds = sw.Elapsed.TotalSeconds;
 
             if (gpx is null)
             {
-                _logger.LogWarning("Tried to deserailize file '{0}' into Gpx but got null as result. Aborting.", file.Name);
+                _uploadModalState.ErrorMessage = $"Failed to import file '{file.Name}'. Nothing was uploaded.";
+                _logger.LogWarning("Tried to deserailize file '{0}' into Gpx object but got null as result. Aborting.", file.Name);
                 return;
             }
 

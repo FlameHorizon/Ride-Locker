@@ -12,6 +12,15 @@
                     <button type="button" class="btn-close" @onclick="_uploadModalState.Close"></button>
                 </div>
                 <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(_uploadModalState.ErrorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            @_uploadModalState.ErrorMessage
+                            <button type="button" class="btn-close" @onclick='() => _uploadModalState.ErrorMessage = null'></button>
+                        </div>
+                    }
+
                     <InputFile OnChange="HandleFile" multiple accept=".gpx" class="form-control mb-3" />
 
                     @if (_uploadModalState.TotalSize > 0)

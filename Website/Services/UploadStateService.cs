@@ -20,6 +20,11 @@ public class UploadModalStateService
     public double TransferSpeedKbs { get; set; }
 
     /// <summary>
+    /// Stores error message, if any, for upload.
+    /// </summary>
+    public string? ErrorMessage { get; set; }
+
+    /// <summary>
     /// Makes modal visible.
     /// </summary>
     public void Open()
@@ -34,6 +39,7 @@ public class UploadModalStateService
     public void Close()
     {
         IsVisible = false;
+        ErrorMessage = null;
         OnChanged?.Invoke();
     }
 
