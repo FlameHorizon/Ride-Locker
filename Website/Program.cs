@@ -18,7 +18,10 @@ if (!string.IsNullOrWhiteSpace(syncfusionKey))
 builder.Services.AddSyncfusionBlazor();
 
 // In-memory cache
-builder.Services.AddMemoryCache();
+builder.Services.AddMemoryCache(options =>
+{
+    options.TrackStatistics = true;
+});
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -36,6 +39,9 @@ SQLitePCL.Batteries.Init();
 
 // Upload state service used for uploading gpx tracks to database.
 builder.Services.AddScoped<UploadModalStateService>();
+
+// Allows for cache clearing when user sends a new data to website.
+builder.Services.AddScoped<CacheSignalService>();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 

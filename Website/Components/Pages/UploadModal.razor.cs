@@ -17,17 +17,20 @@ public partial class UploadModal
     private readonly ILogger<UploadModal> _logger;
     private readonly IMemoryCache _cache;
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
+    private readonly CacheSignalService _cacheSignal;
 
     public UploadModal(
         UploadModalStateService uploadModalState,
         ILogger<UploadModal> logger,
         IMemoryCache cache,
-        IDbContextFactory<AppDbContext> dbContextFactory)
+        IDbContextFactory<AppDbContext> dbContextFactory,
+        CacheSignalService cacheSignal)
     {
         _uploadModalState = uploadModalState;
         _logger = logger;
         _cache = cache;
         _dbContextFactory = dbContextFactory;
+        _cacheSignal = cacheSignal;
     }
 
     protected override void OnInitialized()
@@ -166,9 +169,15 @@ public partial class UploadModal
 
         sw.Restart();
 
+        // NOTE: From MS docs. it look like CurrentEstimatedSize is not tracked
+        // until SizeLimit is not set. Shame. At some point I might work on this.
+        //long? before = _cache.GetCurrentStatistics()?.CurrentEstimatedSize ?? -1;
+        //_logger.LogDebug("Size of the cache before invalidating: {0}", before);
+
         // Invalidate cache which stores rides and track points.
-        _cache.Remove("rides");
+        _cacheSignal.Reset();
         _cache.Remove("tracks");
+        _cache.Remove("rides_total_count");
 
         sw.Stop();
         _logger.LogDebug("Took {0} ms to clear cache.", sw.ElapsedMilliseconds);

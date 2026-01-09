@@ -101,13 +101,13 @@ public partial class RideTableRow
         _logger.LogDebug("Took {0} ms to create directory.", sw.ElapsedMilliseconds);
         sw.Restart();
 
-        _logger.LogInformation("Saving icon at '{0}'", iconPath);
+        _logger.LogDebug("Saving icon at '{0}'", iconPath);
 
         await image.SaveAsPngAsync(iconPath, new PngEncoder());
         _logger.LogDebug("Took {0} ms to save icon.", sw.ElapsedMilliseconds);
 
         string relPath = _env.GetRelativeWebPath(iconPath);
-        _logger.LogInformation("Relative path of the icon is '{0}'", relPath);
+        _logger.LogDebug("Relative path of the icon is '{0}'", relPath);
 
         return await Task.FromResult(relPath);
     }

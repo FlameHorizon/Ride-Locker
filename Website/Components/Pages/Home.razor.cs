@@ -13,21 +13,25 @@ public partial class Home
     private readonly ILogger<Home> _logger;
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IMemoryCache _cache;
+    private readonly CacheSignalService _cacheSignal;
 
     // Pagination
     private int _currentPage = 1;
     private int _pageSize = 10;
     private int _totalPages;
     private IEnumerable<Ride> _pagedRides = [];
+    private int _totalCount;
 
     public Home(
         ILogger<Home> logger,
         IDbContextFactory<AppDbContext> dbContextFactory,
-        IMemoryCache cache)
+        IMemoryCache cache,
+        CacheSignalService cacheSignal)
     {
         _logger = logger;
         _dbContextFactory = dbContextFactory;
         _cache = cache;
+        _cacheSignal = cacheSignal;
     }
 
     protected override async Task OnInitializedAsync()
@@ -40,56 +44,56 @@ public partial class Home
 
         var sw = Stopwatch.StartNew();
 
-        // NOTE: When values are retrieved from cache, they might be not sorted.
-        Ride[]? result = await _cache.GetOrCreateAsync(
-            "rides",
-            async entry =>
-            {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-                await using AppDbContext db = await _dbContextFactory
-                    .CreateDbContextAsync();
-
-                return await db.Rides
-                    .AsNoTracking()
-                    .OrderByDescending(x => x.Start)
-                    .ToArrayAsync();
-            }
-        );
-
-        _logger.LogDebug("Took {0} ms to query database.", sw.ElapsedMilliseconds);
-        sw.Restart();
-
-        if (result is null)
+        // TODO: Remember to invalidate cache when new files are imported.
+        _totalCount = await _cache.GetOrCreateAsync("rides_total_count", async entry =>
         {
-            _logger.LogWarning("Expected to get set of rides from either database or cache, but got null");
-            return;
-        }
+            _logger.LogDebug("Cache miss for rides_total_count. Fetching from DB...");
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+            await using var db = await _dbContextFactory.CreateDbContextAsync();
+            return await db.Rides.CountAsync();
+        });
+
+        _pagedRides = await GetRides();
+        _logger.LogDebug("Took {0} ms to get data for page.", sw.ElapsedMilliseconds);
+        sw.Restart();
 
         // Ordering should be done in place to avoid Linq allocations.
         // Ordering is done here in-place and in reverse order (OrderByDescending).
-        _rides = result;
-        _rides.Sort((a, b) => b.Start.CompareTo(a.Start));
-        UpdatePagination();
-
+        _totalPages = (int)Math.Ceiling((double)_totalCount / _pageSize);
         _logger.LogDebug("Took {0} ms to prepare data. Size {1}", sw.ElapsedMilliseconds, _rides.Length);
         StateHasChanged();
     }
 
-    private void UpdatePagination()
+    private async Task<Ride[]> GetRides()
     {
-        if (_rides == null) return;
+        string cacheKey = $"rides_page_{_currentPage}";
+        return await _cache.GetOrCreateAsync(cacheKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
 
-        _totalPages = (int)Math.Ceiling((double)_rides.Length / _pageSize);
+            // Allow for cache invalidation when new data is uploaded.
+            entry.AddExpirationToken(_cacheSignal.GetToken());
 
-        // Slice the array for the current view
-        _pagedRides = _rides
-            .Skip((_currentPage - 1) * _pageSize)
-            .Take(_pageSize);
+            await using var db = await _dbContextFactory.CreateDbContextAsync();
+
+            _logger.LogDebug("Cache miss for {0}. Fetching from DB...", cacheKey);
+
+            return await db.Rides
+                .AsNoTracking()
+                .OrderByDescending(x => x.Start)
+                .Skip((_currentPage - 1) * _pageSize) // Skip 10 items
+                .Take(_pageSize)                     // Only take 10
+                .ToArrayAsync();
+        }) ?? Array.Empty<Ride>();
     }
 
-    private void ChangePage(int newPage)
+    private async Task ChangePage(int newPage)
     {
         _currentPage = newPage;
-        UpdatePagination();
+        _logger.LogDebug("Change Page to {0}", _currentPage);
+
+        var sw = Stopwatch.StartNew();
+        _pagedRides = await GetRides();
+        _logger.LogDebug("Took {0} ms to get data for page.", sw.ElapsedMilliseconds);
     }
 }
