@@ -18,10 +18,9 @@ if (!string.IsNullOrWhiteSpace(syncfusionKey))
 builder.Services.AddSyncfusionBlazor();
 
 // In-memory cache
-builder.Services.AddMemoryCache(options =>
-{
-    options.TrackStatistics = true;
-});
+// TODO: At some point, it would be required to limit cache memory size.
+// For one user, that is not the issue, but for many, it might be.
+builder.Services.AddMemoryCache();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
