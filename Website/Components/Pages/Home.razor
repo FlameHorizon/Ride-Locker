@@ -8,15 +8,16 @@
 <PageTitle>Home</PageTitle>
 
 <div class="content-inner position-relative m-auto">
-  <table class="table table-borderless table-striped">
-    <tbody>
-      @foreach (Ride ride in _pagedRides) {
-        <tr>
-          <RideTableRow Ride=@ride />
-        </tr>
-      }
-    </tbody>
-  </table>
+    <table class="table table-borderless table-striped">
+        <tbody>
+            @foreach (Ride ride in _pagedRides) {
+            <tr>
+                <RideTableRow Ride=@ride />
+            </tr>
+            }
+        </tbody>
+    </table>
+
     <nav aria-label="Ride pagination">
         <ul class="pagination">
             @* Previous Button *@
