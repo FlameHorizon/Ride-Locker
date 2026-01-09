@@ -19,6 +19,7 @@ public partial class RideTableRow
     [Parameter][EditorRequired] public Ride Ride { get; set; } = new();
     private readonly ILogger<RideTableRow> _logger;
     private readonly IWebHostEnvironment _env;
+    private string _iconPath = "";
 
     public RideTableRow(
         ILogger<RideTableRow> logger,
@@ -26,6 +27,11 @@ public partial class RideTableRow
     {
         _logger = logger;
         _env = env;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _iconPath = await CreateIcon();
     }
 
     private string FormatTimeAgo(DateTime dt)
@@ -50,7 +56,7 @@ public partial class RideTableRow
     }
 
     // Should be GetOrCreateIcon
-    private string CreateIcon()
+    private async Task<string> CreateIcon()
     {
         List<TrackPoint> track = Ride.TrackPoints;
 
@@ -67,7 +73,7 @@ public partial class RideTableRow
         var sw = System.Diagnostics.Stopwatch.StartNew();
         if (File.Exists(iconPath))
         {
-            return _env.GetRelativeWebPath(iconPath);
+            return await Task.FromResult(_env.GetRelativeWebPath(iconPath));
         }
 
         _logger.LogDebug("Took {0} ms to check if file exists.", sw.ElapsedMilliseconds);
@@ -91,13 +97,14 @@ public partial class RideTableRow
         _logger.LogInformation("Saving icon at '{0}'", iconPath);
         // NOTE: We know that file does not exist, we checked that at the beginning
         // of the method.
-        File.Create(iconPath).Close();
-        image.SaveAsPng(iconPath, new PngEncoder());
+        //File.Create(iconPath).Close();
+        await image.SaveAsPngAsync(iconPath, new PngEncoder());
         _logger.LogDebug("Took {0} ms to save icon.", sw.ElapsedMilliseconds);
 
         string relPath = _env.GetRelativeWebPath(iconPath);
         _logger.LogInformation("Relative path of the icon is '{0}'", relPath);
-        return relPath;
+
+        return await Task.FromResult(relPath);
     }
 
     /// <summary>
