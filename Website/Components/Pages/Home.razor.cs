@@ -6,6 +6,7 @@ using System.Diagnostics;
 
 namespace Website.Components.Pages;
 
+// TODO: Add pagination.
 public partial class Home
 {
     private Ride[] _rides = [];

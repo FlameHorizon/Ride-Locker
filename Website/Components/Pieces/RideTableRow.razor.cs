@@ -63,12 +63,20 @@ public partial class RideTableRow
         // Check, if icon already exists for this ride.
         string storagePath = Path.Combine(_env.WebRootPath, "uploads", Ride.Id.ToString());
         string iconPath = Path.Combine(storagePath, "icon.png");
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         if (File.Exists(iconPath))
         {
             return _env.GetRelativeWebPath(iconPath);
         }
 
+        _logger.LogDebug("Took {0} ms to check if file exists.", sw.ElapsedMilliseconds);
+        sw.Restart();
+
         using var image = CreateImage(Ride);
+
+        _logger.LogDebug("Took {0} ms to create an icon image.", sw.ElapsedMilliseconds);
+        sw.Restart();
 
         // Absolute path allows to manage files on the system, whereas 
         // relative path allows to display content on website.
@@ -77,11 +85,15 @@ public partial class RideTableRow
             Directory.CreateDirectory(storagePath);
         }
 
+        _logger.LogDebug("Took {0} ms to create directory.", sw.ElapsedMilliseconds);
+        sw.Restart();
+
         _logger.LogInformation("Saving icon at '{0}'", iconPath);
         // NOTE: We know that file does not exist, we checked that at the beginning
         // of the method.
         File.Create(iconPath).Close();
         image.SaveAsPng(iconPath, new PngEncoder());
+        _logger.LogDebug("Took {0} ms to save icon.", sw.ElapsedMilliseconds);
 
         string relPath = _env.GetRelativeWebPath(iconPath);
         _logger.LogInformation("Relative path of the icon is '{0}'", relPath);
