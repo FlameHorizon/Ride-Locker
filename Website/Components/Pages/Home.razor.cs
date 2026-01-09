@@ -22,6 +22,9 @@ public partial class Home : IDisposable
     private IEnumerable<Ride> _pagedRides = [];
     private int _totalCount;
 
+    // Toast
+    private bool _showToast = false;
+
     public Home(
         ILogger<Home> logger,
         IDbContextFactory<AppDbContext> dbContextFactory,
@@ -41,21 +44,32 @@ public partial class Home : IDisposable
 
     private async void HandleCacheInvalidated()
     {
-        _logger.LogDebug("Cache has been invalidated. Refreshing page.");
-        var sw = Stopwatch.StartNew();
-        _totalCount = await _cache.GetOrCreateAsync("rides_total_count", async entry =>
+        await InvokeAsync(async () =>
         {
-            _logger.LogDebug("Cache miss for rides_total_count. Fetching from DB...");
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-            await using var db = await _dbContextFactory.CreateDbContextAsync();
-            return await db.Rides.CountAsync();
+            _logger.LogDebug("Cache has been invalidated. Refreshing page.");
+            var sw = Stopwatch.StartNew();
+            _totalCount = await _cache.GetOrCreateAsync("rides_total_count", async entry =>
+            {
+                _logger.LogDebug("Cache miss for rides_total_count. Fetching from DB...");
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                await using var db = await _dbContextFactory.CreateDbContextAsync();
+                return await db.Rides.CountAsync();
+            });
+
+            _totalPages = (int)Math.Ceiling((double)_totalCount / _pageSize);
+            _pagedRides = await GetRides();
+
+            StateHasChanged();
+            _logger.LogDebug("Took {0} ms to get data for page.", sw.ElapsedMilliseconds);
+
+            _showToast = true; // Show the toast
+            StateHasChanged();
+
+            // Auto-hide the toast after 4 seconds
+            await Task.Delay(4000);
+            _showToast = false;
+            StateHasChanged();
         });
-
-        _totalPages = (int)Math.Ceiling((double)_totalCount / _pageSize);
-        _pagedRides = await GetRides();
-
-        StateHasChanged();
-        _logger.LogDebug("Took {0} ms to get data for page.", sw.ElapsedMilliseconds);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

@@ -65,4 +65,9 @@ public class Ride
     /// Represents the name of the file uploaded with extension.
     /// </summary>
     public string FullName { get; internal set; } = "";
+
+    /// <summary>
+    /// Moment when ride was created.
+    /// </summary>
+    public DateTime Created { get; internal set; }
 }

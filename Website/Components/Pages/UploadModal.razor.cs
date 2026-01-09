@@ -283,6 +283,7 @@ public partial class UploadModal
             MaxSpeed = speedMetersPerSecondMax,
             Distance = Geo.HaversineDistance(trackPoints),
             TrackPoints = trackPoints,
+            Created = DateTime.UtcNow,
         };
     }
 
