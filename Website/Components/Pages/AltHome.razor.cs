@@ -159,5 +159,20 @@ public partial class AltHome
         _cacheSignal.OnCacheInvalidated -= HandleCacheInvalidated;
     }
 
+    private IEnumerable<int> GetVisiblePages()
+    {
+        const int windowSize = 3; // How many pages to show before/after current
+        var pages = new List<int>();
+
+        int startPage = Math.Max(1, _currentPage - windowSize);
+        int endPage = Math.Min(_totalPages, _currentPage + windowSize);
+
+        for (int i = startPage; i <= endPage; i++)
+        {
+            pages.Add(i);
+        }
+
+        return pages;
+    }
 
 }

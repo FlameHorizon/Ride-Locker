@@ -140,33 +140,46 @@
                         </table>
                     </div>
                 </div>
-                @* FIX: width of the element seems to be entire page, which is not very nice *@
-                <nav aria-label="Ride pagination">
-                    <ul class="pagination">
-                        @* Previous Button *@
-                        <li class="page-item @(_currentPage == 1 ? "disabled" : "")">
-                            <button class="page-link" @onclick="() => ChangePage(_currentPage - 1)" 
-                                    disabled="@(_currentPage == 1)">Previous</button>
-                        </li>
+            </div>
 
-                        @* Dynamic Page Numbers *@
-                        @for (int i = 1; i <= _totalPages; i++)
-                        {
-                            var pageNumber = i; @* Local variable for the closure *@
-                            <li class="page-item @(pageNumber == _currentPage ? "active" : "")">
-                                <button class="page-link" @onclick="() => ChangePage(pageNumber)">
-                                    @pageNumber
+            <div class="card-footer bg-gray py-3">
+                <div class="d-flex justify-content-left align-items-center">
+                    <nav aria-label="Ride pagination">
+                        <ul class="pagination">
+                            
+                            @* Jump to First Page *@
+                            <li class="page-item @(_currentPage == 1 ? "disabled" : "")">
+                                <button type="button" 
+                                    class="page-link" 
+                                    @onclick="@(() => ChangePage(1))" 
+                                    disabled="@(_currentPage == 1)">
+                                    First
                                 </button>
                             </li>
-                        }
 
-                        @* Next Button *@
-                        <li class="page-item @(_currentPage == _totalPages ? "disabled" : "")">
-                            <button class="page-link" @onclick="() => ChangePage(_currentPage + 1)" 
-                                    disabled="@(_currentPage == _totalPages)">Next</button>
-                        </li>
-                    </ul>
-                </nav>
+                            @* Dynamic Sliding Window *@
+                            @foreach (var pageNumber in GetVisiblePages())
+                            {
+                                <li class="page-item @(pageNumber == _currentPage ? "active" : "")">
+                                    <button class="page-link" @onclick="() => ChangePage(pageNumber)">
+                                        @pageNumber
+                                    </button>
+                                </li>
+                            }
+
+                            @* Jump to Last Page *@
+                            <li class="page-item @(_currentPage == _totalPages ? "disabled" : "")">
+                                <button 
+                                    class="page-link" 
+                                    @onclick="() => ChangePage(_totalPages)"
+                                    disbaled="@(_currentPage == _totalPages)">
+                                    Last
+                                </button>
+                            </li>
+
+                        </ul>
+                    </nav>
+                </div>
             </div>
         </div>
 
