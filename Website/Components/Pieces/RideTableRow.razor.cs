@@ -1,16 +1,11 @@
-using SixLabors.ImageSharp.Drawing;
-using SixLabors.ImageSharp.Formats.Png;
-using SixLabors.ImageSharp.Metadata;
-using Path = System.IO.Path;
-
 namespace Website.Components.Pieces;
 
-using Microsoft.AspNetCore.Components;
 using Website.Models;
+using Microsoft.AspNetCore.Components;
+using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using Path = System.IO.Path;
 
 public partial class RideTableRow
 {
@@ -95,9 +90,7 @@ public partial class RideTableRow
         sw.Restart();
 
         _logger.LogInformation("Saving icon at '{0}'", iconPath);
-        // NOTE: We know that file does not exist, we checked that at the beginning
-        // of the method.
-        //File.Create(iconPath).Close();
+
         await image.SaveAsPngAsync(iconPath, new PngEncoder());
         _logger.LogDebug("Took {0} ms to save icon.", sw.ElapsedMilliseconds);
 
