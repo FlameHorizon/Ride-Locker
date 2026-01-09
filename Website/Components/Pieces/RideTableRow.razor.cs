@@ -29,8 +29,10 @@ public partial class RideTableRow
         _dbContextFactory = dbContextFactory;
     }
 
-    protected override async Task OnInitializedAsync()
+    // This runs every time the 'Ride' parameter changes (e.g., during pagination)
+    protected override async Task OnParametersSetAsync()
     {
+        // Fetch the new icon for the new Ride ID
         _iconPath = await CreateIcon();
     }
 
