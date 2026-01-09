@@ -119,14 +119,7 @@
                                         <td class="text-center">
                                         @{
                                             int alertCount = ride.FastAccelerationCount + ride.FastDecelerationCount;
-                                            @if (alertCount <= 4) 
-                                            {
-                                                <span class="badge bg-dark text-white border">@alertCount</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-danger-subtle text-danger border-danger-subtle">@(alertCount)</span>
-                                            }
+                                            <span class="badge bg-dark text-white border">@alertCount</span>
                                         }
                                         </td>
                                         <td class="pe-4 text-end">
