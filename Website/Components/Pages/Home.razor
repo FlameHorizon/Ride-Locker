@@ -1,5 +1,7 @@
 ﻿@page "/"
 
+@rendermode InteractiveServer
+
 @using Website.Models
 @using Website.Components.Pieces
 
@@ -8,11 +10,21 @@
 <div class="content-inner position-relative m-auto">
   <table class="table table-borderless table-striped">
     <tbody>
-      @foreach (Ride ride in _rides) {
+      @foreach (Ride ride in _pagedRides) {
         <tr>
           <RideTableRow Ride=@ride />
         </tr>
       }
     </tbody>
   </table>
+
+    <div class="pagination-controls">
+        <button disabled="@(_currentPage == 1)" 
+                @onclick="() => ChangePage(_currentPage - 1)">Previous</button>
+
+        <span>Page @_currentPage of @_totalPages</span>
+
+        <button disabled="@(_currentPage == _totalPages)" 
+                @onclick="() => ChangePage(_currentPage + 1)">Next</button>
+    </div>
 </div>
