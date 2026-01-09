@@ -169,17 +169,17 @@ public partial class RideTableRow
             }
         }
 
-        // NOTE: Setting color as transparent during initialization and not filling image with it makes code run faster by 10% (97 -> 90)
+        // PERF: Setting color as transparent during initialization is faster.
         // Also, we can skip a lot of overhead while setting up configuration with just 
-        // passing empty confing. Loding that, we can reduce time during cold start.
-        // But our image object will be kinda dumb. It will not know who to save itself
+        // passing empty confing. Doing that, we can reduce time during cold start.
+        // But our image object will be kinda dumb. It will not know how to save itself
         // as encoders for png, provided by defualt well be missing.
         Image<Rgba32> image = new(new Configuration(), imageSize, imageSize, Color.Transparent);
 
         // PERF: For performance reasons instead of drawing a line,
         // I'm drawing each pixel individually since drawing a line
         // which is smooth is much slower. Image will not look as nice,
-        // but the speed is better.
+        // but the speed will be better.
         image.ProcessPixelRows(accessor =>
         {
             foreach (var p in points)
