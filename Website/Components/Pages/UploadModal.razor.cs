@@ -205,7 +205,7 @@ public partial class UploadModal
         DateTime dtPrev = firstTrk.Time;
         double speedMetersPerSecondPrev = firstTrk.Extensions?.Speed ?? 0;
 
-        double elevationGain = 0, elevationLoss = firstTrk.Ele;
+        double elevationGain = 0, elevationLoss = 0;
         double speedMetersPerSecondMax = double.MinValue, sumSpeed = 0;
         int fastAcc = 0, fastDec = 0;
 
@@ -237,7 +237,11 @@ public partial class UploadModal
             // TODO: Remove variable below, does not need to be here.
             sumSpeed += speedMetersPerSecondCurrent;
 
-            double eleDiff = elePrev - tp.Elevation;
+            double eleDiff = tp.Elevation - elePrev;
+
+            // If elevetion difference is negative, it means that elevation has decreased.
+            // Example: T1e = 100m, T2e = 105m
+            // delta = T2e - T1e = 5m; we are 5m higher than before.
             if (eleDiff > 0.0d) elevationGain += eleDiff;
             else elevationLoss -= eleDiff;
 
