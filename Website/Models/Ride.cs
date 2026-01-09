@@ -70,4 +70,10 @@ public class Ride
     /// Moment when ride was created.
     /// </summary>
     public DateTime Created { get; internal set; }
+
+    /// <summary>
+    /// Score which indicates how smooth was the ride. Value between 0 (worst)
+    /// to 100 (best).
+    /// </summary>
+    public int SmoothnessScore { get; internal set; }
 }

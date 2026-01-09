@@ -1,0 +1,24 @@
+/* Custom background for the entire page body */
+body {
+    background-color: #f8f9fa;
+}
+
+/* Make table rows feel more like 'cards' */
+.table tbody tr {
+    border-bottom: 1px solid #f1f1f1;
+}
+
+/* Subtle icon backgrounds */
+.bg-primary-subtle { background-color: #e7f1ff; }
+.bg-secondary-subtle { background-color: #f8f9fa; }
+.bg-danger-subtle { background-color: #f8d7da; }
+
+/* Ensure the yellow highlight wins over stripe colors */
+.highlight-new td {
+    animation: yellow-fade 4s ease-in-out forwards;
+}
+
+@keyframes yellow-fade {
+    from { background-color: #fff3cd !important; }
+    to { background-color: transparent; }
+}

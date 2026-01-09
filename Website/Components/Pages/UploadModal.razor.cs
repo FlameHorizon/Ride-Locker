@@ -284,6 +284,7 @@ public partial class UploadModal
             Distance = Geo.HaversineDistance(trackPoints),
             TrackPoints = trackPoints,
             Created = DateTime.UtcNow,
+            SmoothnessScore = CalculateSmoothness(trackPoints)
         };
     }
 
@@ -305,5 +306,53 @@ public partial class UploadModal
         }
 
         return cleanName;
+    }
+
+    // The most industry-standard way to calculate this is to find the Standard Deviation of your acceleration. 
+    // If the acceleration fluctuates wildly, the score goes down.
+    // Step-by-Step Logic:
+    // - Calculate Delta Speed ($\Delta v$): The difference in speed between two points.
+    // - Calculate Delta Time ($\Delta t$): The time elapsed between points.
+    // - Calculate Acceleration (1$a$): 2$a = \frac{\Delta v}{\Delta t}$.
+    // - Determine Variance: Calculate how much each $a$ deviates from a "perfect" smooth acceleration (0).
+    private static int CalculateSmoothness(List<TrackPoint> points)
+    {
+        if (points.Count < 2) return 100;
+
+        double totalPenalty = 0;
+        int measurementCount = 0;
+
+        for (int i = 1; i < points.Count; i++)
+        {
+            var p1 = points[i - 1];
+            var p2 = points[i];
+
+            double dt = (p2.Time - p1.Time).TotalSeconds;
+            if (dt <= 0.5) continue; // Ignore sub-half-second noise
+
+            // Acceleration = Change in velocity / Change in time
+            double accel = Math.Abs(p2.Speed - p1.Speed) / dt;
+
+            // Only penalize if it exceeds 1.0 m/s²
+            const double DEAD_ZONE = .0;
+            if (accel > DEAD_ZONE)
+            {
+                // Penalty grows the further you are from 1.0
+                // Example: 1.5 m/s² results in a 0.5 penalty
+                totalPenalty += Math.Pow(accel - DEAD_ZONE, 2);
+            }
+            measurementCount++;
+        }
+
+        // Normalize the penalty based on the duration of the ride
+        // This prevents longer rides from having lower scores just because they are long
+        double averagePenalty = totalPenalty / measurementCount;
+
+        // Scale the average penalty to a 0-100 range
+        // If average penalty is 2.0 m/s² above the threshold, score is 0
+        const int SENSITIVITY = 50;
+        int finalScore = Convert.ToInt32(100 - (averagePenalty * SENSITIVITY));
+
+        return Math.Clamp(finalScore, 0, 100);
     }
 }
