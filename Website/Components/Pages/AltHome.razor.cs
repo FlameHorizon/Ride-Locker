@@ -125,6 +125,7 @@ public partial class AltHome
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender == false) return;
+
         await using var db = await _dbContextFactory.CreateDbContextAsync();
         if (db.Rides.Any() == false) return;
 
@@ -135,72 +136,57 @@ public partial class AltHome
         // in memory. Also, my thing can be cached.
 
         var sw = Stopwatch.StartNew();
-        var stats = await db.Rides
-            .GroupBy(_ => 1)
-            .Select(g => new
+        _totalDistanceAnalyzed = await _cache.GetOrCreateAsync(
+            CacheKeys.Get(CacheKey.TotalDistance),
+            async entry =>
             {
-                Count = g.Count(),
-                Distance = g.Sum(x => x.Distance),
-                HardBraking = g.Sum(x => x.FastDecelerationCount),
-                FastAccents = g.Sum(x => x.FastAccelerationCount),
-                AvgSmoothness = g.Average(x => x.SmoothnessScore)
-            })
-            .FirstOrDefaultAsync();
-
-        if (stats is not null)
-        {
-            _totalDistanceAnalyzed = await _cache.GetOrCreateAsync(
-                CacheKeys.Get(CacheKey.TotalDistance),
-                async entry =>
-                {
-                    _logger.LogDebug("Cache miss for {0}. Creating value...", CacheKeys.Get(CacheKey.TotalDistance));
-                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-                    entry.AddExpirationToken(_cacheSignal.GetToken());
-                    return await db.Rides.SumAsync(x => x.Distance);
-                });
-
-            _hardBrakingEvents = await _cache.GetOrCreateAsync(
-                CacheKeys.Get(CacheKey.HardBrakingEvents),
-                async entry =>
-                {
-                    _logger.LogDebug("Cache miss for {0}. Creating value...", CacheKeys.Get(CacheKey.HardBrakingEvents));
-                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-                    entry.AddExpirationToken(_cacheSignal.GetToken());
-                    return await db.Rides.SumAsync(x => x.FastDecelerationCount);
-                });
-
-            _gForceAlerts = await _cache.GetOrCreateAsync(
-                CacheKeys.Get(CacheKey.GForceAlerts),
-                async entry =>
-                {
-                    _logger.LogDebug("Cache miss for {0}. Creating value...", CacheKeys.Get(CacheKey.GForceAlerts));
-                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-                    entry.AddExpirationToken(_cacheSignal.GetToken());
-                    return await db.Rides.SumAsync(x => x.FastAccelerationCount + x.FastDecelerationCount);
-                });
-
-
-            _smoothnessScore = await _cache.GetOrCreateAsync(
-                CacheKeys.Get(CacheKey.SmoothnessScore),
-                async entry =>
-                {
-                    _logger.LogDebug("Cache miss for {0}. Creating value...", CacheKeys.Get(CacheKey.SmoothnessScore));
-                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-                    entry.AddExpirationToken(_cacheSignal.GetToken());
-                    return await db.Rides.AverageAsync(x => x.SmoothnessScore);
-                });
-
-            _totalCount = await _cache.GetOrCreateAsync(
-                CacheKeys.Get(CacheKey.TotalCount),
-                async entry =>
-            {
-                _logger.LogDebug("Cache miss for {0}. Fetching from DB...", CacheKeys.Get(CacheKey.TotalCount));
+                _logger.LogDebug("Cache miss for {0}. Creating value...", CacheKeys.Get(CacheKey.TotalDistance));
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
                 entry.AddExpirationToken(_cacheSignal.GetToken());
-                await using var db = await _dbContextFactory.CreateDbContextAsync();
-                return await db.Rides.CountAsync();
+                return await db.Rides.SumAsync(x => x.Distance);
             });
-        }
+
+        _hardBrakingEvents = await _cache.GetOrCreateAsync(
+            CacheKeys.Get(CacheKey.HardBrakingEvents),
+            async entry =>
+            {
+                _logger.LogDebug("Cache miss for {0}. Creating value...", CacheKeys.Get(CacheKey.HardBrakingEvents));
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AddExpirationToken(_cacheSignal.GetToken());
+                return await db.Rides.SumAsync(x => x.FastDecelerationCount);
+            });
+
+        _gForceAlerts = await _cache.GetOrCreateAsync(
+            CacheKeys.Get(CacheKey.GForceAlerts),
+            async entry =>
+            {
+                _logger.LogDebug("Cache miss for {0}. Creating value...", CacheKeys.Get(CacheKey.GForceAlerts));
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AddExpirationToken(_cacheSignal.GetToken());
+                return await db.Rides.SumAsync(x => x.FastAccelerationCount + x.FastDecelerationCount);
+            });
+
+
+        _smoothnessScore = await _cache.GetOrCreateAsync(
+            CacheKeys.Get(CacheKey.SmoothnessScore),
+            async entry =>
+            {
+                _logger.LogDebug("Cache miss for {0}. Creating value...", CacheKeys.Get(CacheKey.SmoothnessScore));
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+                entry.AddExpirationToken(_cacheSignal.GetToken());
+                return await db.Rides.AverageAsync(x => x.SmoothnessScore);
+            });
+
+        _totalCount = await _cache.GetOrCreateAsync(
+            CacheKeys.Get(CacheKey.TotalCount),
+            async entry =>
+        {
+            _logger.LogDebug("Cache miss for {0}. Fetching from DB...", CacheKeys.Get(CacheKey.TotalCount));
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+            entry.AddExpirationToken(_cacheSignal.GetToken());
+            await using var db = await _dbContextFactory.CreateDbContextAsync();
+            return await db.Rides.CountAsync();
+        });
 
         _pagedRides = await GetRides(db);
         _logger.LogDebug("Took {0} ms to get data for page.", sw.ElapsedMilliseconds);
