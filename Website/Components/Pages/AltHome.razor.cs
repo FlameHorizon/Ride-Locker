@@ -188,7 +188,7 @@ public partial class AltHome
             return await db.Rides.CountAsync();
         });
 
-        _pagedRides = await GetRides(db);
+        _pagedRides = await GetRidesPaged(db, _pageSize);
         _logger.LogDebug("Took {0} ms to get data for page.", sw.ElapsedMilliseconds);
         sw.Restart();
 
@@ -199,7 +199,7 @@ public partial class AltHome
         StateHasChanged();
     }
 
-    private async Task<Ride[]> GetRides(AppDbContext db)
+    private async Task<Ride[]> GetRidesPaged(AppDbContext db, int pageSize)
     {
         string cacheKey = $"rides_page_{_currentPage}";
         return await _cache.GetOrCreateAsync(cacheKey, async entry =>
@@ -212,7 +212,7 @@ public partial class AltHome
                 .AsNoTracking()
                 .OrderByDescending(x => x.Start)
                 .Skip((_currentPage - 1) * _pageSize) // Skip 10 items
-                .Take(_pageSize)                     // Only take 10
+                .Take(pageSize)                     // Only take 10
                 .ToArrayAsync();
         }) ?? Array.Empty<Ride>();
     }
@@ -224,7 +224,7 @@ public partial class AltHome
 
         var sw = Stopwatch.StartNew();
         using var db = await _dbContextFactory.CreateDbContextAsync();
-        _pagedRides = await GetRides(db);
+        _pagedRides = await GetRidesPaged(db, _pageSize);
         _logger.LogDebug("Took {0} ms to get data for page.", sw.ElapsedMilliseconds);
     }
 
