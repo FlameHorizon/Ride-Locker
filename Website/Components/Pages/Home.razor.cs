@@ -22,7 +22,6 @@ public partial class Home
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IMemoryCache _cache;
     private readonly CacheSignalService _cacheSignal;
-    private readonly NavigationManager _navigationManager;
 
     // Pagination
     private int _currentPage = 1;
@@ -41,14 +40,12 @@ public partial class Home
         ILogger<Home> logger,
         IDbContextFactory<AppDbContext> dbContextFactory,
         IMemoryCache cache,
-        CacheSignalService cacheSignal,
-        NavigationManager navigationManager)
+        CacheSignalService cacheSignal)
     {
         _logger = logger;
         _dbContextFactory = dbContextFactory;
         _cache = cache;
         _cacheSignal = cacheSignal;
-        _navigationManager = navigationManager;
 
         // FIX: These are duplices.
         _currentFilter = Filter.All;
@@ -117,6 +114,9 @@ public partial class Home
 
         _totalPages = (int)Math.Ceiling((double)_totalCount / _pageSize);
         _displayedRides = await GetRidesPaged(db, _pageSize);
+        _currentFilter = Filter.All;
+        SelectedFilter = "all";
+        await ChangePage(1);
     }
 
     private void SetInCache<TItem>(object key, TItem value)
@@ -231,6 +231,8 @@ public partial class Home
 
     private async Task ChangePage(int newPage)
     {
+        if (_currentPage == newPage) return;
+
         _currentPage = newPage;
         _logger.LogDebug("Change Page to {0}", _currentPage);
 
@@ -335,18 +337,9 @@ public partial class Home
     private async Task ToggleFilter(string filterName)
     {
         if (filterName == SelectedFilter) return;
+        SelectedFilter = filterName;
 
         string? newValue = filterName;
-
-        // This updates the URL (e.g., /rides?filter=smooth) without a full page reload
-        var newUri = _navigationManager.GetUriWithQueryParameter("filter", newValue);
-        _navigationManager.NavigateTo(newUri);
-    }
-
-    protected override async Task OnParametersSetAsync()
-    {
-        // This runs every time the URL parameters change 
-        // (including when you hit the 'Back' button)
         if (SelectedFilter == "smooth")
         {
             await ShowSmoothRidesAsync();
