@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Website.Data;
@@ -8,6 +9,9 @@ namespace Website.Components.Pages;
 
 public partial class AltHome
 {
+    [SupplyParameterFromQuery(Name = "filter")]
+    public string? SelectedFilter { get; set; }
+
     private double _smoothnessScore;
     private int _gForceAlerts;
     private int _hardBrakingEvents;
@@ -18,6 +22,7 @@ public partial class AltHome
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
     private readonly IMemoryCache _cache;
     private readonly CacheSignalService _cacheSignal;
+    private readonly NavigationManager _navigationManager;
 
     // Pagination
     private int _currentPage = 1;
@@ -36,18 +41,23 @@ public partial class AltHome
         ILogger<Home> logger,
         IDbContextFactory<AppDbContext> dbContextFactory,
         IMemoryCache cache,
-        CacheSignalService cacheSignal)
+        CacheSignalService cacheSignal,
+        NavigationManager navigationManager)
     {
         _logger = logger;
         _dbContextFactory = dbContextFactory;
         _cache = cache;
         _cacheSignal = cacheSignal;
+        _navigationManager = navigationManager;
+
+        // FIX: These are duplices.
         _currentFilter = Filter.All;
     }
 
     protected override async Task OnInitializedAsync()
     {
         _cacheSignal.OnCacheInvalidated += HandleCacheInvalidated;
+        SelectedFilter = "all";
     }
 
     private async void HandleCacheInvalidated()
@@ -237,7 +247,7 @@ public partial class AltHome
 
     private IEnumerable<int> GetVisiblePages()
     {
-        if (_currentFilter == Filter.SmoothRides)
+        if (_currentFilter == Filter.Smooth)
             return new[] { 1 };
 
         const int windowSize = 3; // How many pages to show before/after current
@@ -277,7 +287,7 @@ public partial class AltHome
 
     private async Task ShowSmoothRidesAsync()
     {
-        _currentFilter = Filter.SmoothRides;
+        _currentFilter = Filter.Smooth;
 
         // Get 10 recent rides which have score higher than 90%
         using var db = await _dbContextFactory.CreateDbContextAsync();
@@ -303,7 +313,7 @@ public partial class AltHome
     private enum Filter
     {
         All,
-        SmoothRides
+        Smooth
     }
 
     private async Task ShowAllRidesAsync()
@@ -320,5 +330,30 @@ public partial class AltHome
         using var db = await _dbContextFactory.CreateDbContextAsync();
         _displayedRides = await GetRidesPaged(db, _pageSize);
         _logger.LogDebug("Took {0} ms to get data for page.", sw.ElapsedMilliseconds);
+    }
+
+    private async Task ToggleFilter(string filterName)
+    {
+        if (filterName == SelectedFilter) return;
+
+        string? newValue = filterName;
+
+        // This updates the URL (e.g., /rides?filter=smooth) without a full page reload
+        var newUri = _navigationManager.GetUriWithQueryParameter("filter", newValue);
+        _navigationManager.NavigateTo(newUri);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // This runs every time the URL parameters change 
+        // (including when you hit the 'Back' button)
+        if (SelectedFilter == "smooth")
+        {
+            await ShowSmoothRidesAsync();
+        }
+        else
+        {
+            await ShowAllRidesAsync();
+        }
     }
 }
