@@ -79,7 +79,7 @@
                                     <th class="ps-4">RIDE DETAILS</th>
                                     <th>SMOOTHNESS</th>
                                     <th>DISTANCE</th>
-                                    <th>ELEVATION</th>
+                                    <th>AVG. SPEED</th>
                                     <th class="text-center">ALERTS</th>
                                     <th class="pe-4"></th>
                                 </tr>
@@ -115,7 +115,7 @@
                                             </div>
                                         </td>
                                         <td>@(ride.Distance.ToString("F2")) km</td>
-                                        <td>@(ride.ElevationGain.ToString("F0")) m</td>
+                                        <td>@((ride.AvgSpeed * 3.6).ToString("F0")) km/h</td>
                                         <td class="text-center">
                                         @{
                                             int alertCount = ride.FastAccelerationCount + ride.FastDecelerationCount;
