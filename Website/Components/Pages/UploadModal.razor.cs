@@ -195,6 +195,9 @@ public partial class UploadModal
 
         // Invalidate cache which stores rides and track points.
         _cache.Remove("tracks");
+
+        // TODO: Check if this values isn't already a part of cache signal in home page.
+        // If yes, they we don't need to remove it manually.
         _cache.Remove("rides_total_count");
         _cacheSignal.Reset();
 
@@ -209,7 +212,8 @@ public partial class UploadModal
 
     public static Ride ConvertToRide(Gpx gpx)
     {
-        var trkpts = gpx.Trk.Trkseg.Trkpt;
+        // PERF: Doing it now the slow way.
+        var trkpts = gpx.Trk.SelectMany(x => x.Trkseg.Trkpt).ToList();
         int count = trkpts.Count;
         if (count == 0) return new Ride();
 

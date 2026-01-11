@@ -56,6 +56,8 @@ public class Trkseg
 public class Trk
 {
 
+    // NOTE: I have not seen yet that a single track contains muplitple track segments.
+    // Might not be the case.
     [XmlElement(ElementName = "trkseg")]
     public Trkseg Trkseg { get; set; } = new();
 }
@@ -68,7 +70,7 @@ public class Gpx
     public Metadata Metadata { get; set; } = new();
 
     [XmlElement(ElementName = "trk")]
-    public Trk Trk { get; set; } = new();
+    public List<Trk> Trk { get; set; } = new();
 
     [XmlAttribute(AttributeName = "version")]
     public string Version { get; set; } = "";
