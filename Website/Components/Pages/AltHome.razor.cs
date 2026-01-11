@@ -104,7 +104,7 @@ public partial class AltHome
         }
 
         _totalPages = (int)Math.Ceiling((double)_totalCount / _pageSize);
-        _pagedRides = await GetRides(db, _pageSize);
+        _pagedRides = await GetRidesPaged(db, _pageSize);
     }
 
     private void SetInCache<TItem>(object key, TItem value)
