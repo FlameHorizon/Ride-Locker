@@ -7,7 +7,7 @@ using Website.Models;
 
 namespace Website.Components.Pages;
 
-public partial class AltHome
+public partial class Home
 {
     [SupplyParameterFromQuery(Name = "filter")]
     public string? SelectedFilter { get; set; }
@@ -37,7 +37,7 @@ public partial class AltHome
     // Other
     private Filter _currentFilter;
 
-    public AltHome(
+    public Home(
         ILogger<Home> logger,
         IDbContextFactory<AppDbContext> dbContextFactory,
         IMemoryCache cache,
