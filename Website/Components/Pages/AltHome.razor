@@ -71,8 +71,8 @@
                 <div class="card-header bg-gray border-0 py-3 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 fw-bold">Recent Drive Analysis</h5>
                     <div class="btn-group shadow-sm">
-                        <button class="btn btn-outline-secondary btn-sm active">All</button>
-                        <button class="btn btn-outline-secondary btn-sm">High Smoothness</button>
+                        <button class="btn btn-outline-secondary btn-sm @(_currentFilter == Filter.All ? "active" : "")" @onclick="@(ShowAllRidesAsync)">All</button>
+                        <button class="btn btn-outline-secondary btn-sm @(_currentFilter == Filter.SmoothRides ? "active" : "")" @onclick="@(ShowSmoothRidesAsync)">High Smoothness</button>
                         <button class="btn btn-outline-secondary btn-sm">Warnings</button>
                     </div>
                 </div>
@@ -90,7 +90,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach(var ride in _pagedRides) 
+                                @foreach(var ride in _displayedRides) 
                                 {
                                     <tr>
                                         <td class="ps-4">

@@ -23,13 +23,14 @@ public partial class AltHome
     private int _currentPage = 1;
     private int _pageSize = 10;
     private int _totalPages;
-    private IEnumerable<Ride> _pagedRides = [];
+    private IEnumerable<Ride> _displayedRides = [];
     private int _totalCount;
 
     // Toast
     private bool _showToast = false;
 
-    // Keys for cache
+    // Other
+    private Filter _currentFilter;
 
     public AltHome(
         ILogger<Home> logger,
@@ -41,6 +42,7 @@ public partial class AltHome
         _dbContextFactory = dbContextFactory;
         _cache = cache;
         _cacheSignal = cacheSignal;
+        _currentFilter = Filter.All;
     }
 
     protected override async Task OnInitializedAsync()
@@ -104,7 +106,7 @@ public partial class AltHome
         }
 
         _totalPages = (int)Math.Ceiling((double)_totalCount / _pageSize);
-        _pagedRides = await GetRidesPaged(db, _pageSize);
+        _displayedRides = await GetRidesPaged(db, _pageSize);
     }
 
     private void SetInCache<TItem>(object key, TItem value)
@@ -188,7 +190,7 @@ public partial class AltHome
             return await db.Rides.CountAsync();
         });
 
-        _pagedRides = await GetRidesPaged(db, _pageSize);
+        _displayedRides = await GetRidesPaged(db, _pageSize);
         _logger.LogDebug("Took {0} ms to get data for page.", sw.ElapsedMilliseconds);
         sw.Restart();
 
@@ -224,7 +226,7 @@ public partial class AltHome
 
         var sw = Stopwatch.StartNew();
         using var db = await _dbContextFactory.CreateDbContextAsync();
-        _pagedRides = await GetRidesPaged(db, _pageSize);
+        _displayedRides = await GetRidesPaged(db, _pageSize);
         _logger.LogDebug("Took {0} ms to get data for page.", sw.ElapsedMilliseconds);
     }
 
@@ -235,6 +237,9 @@ public partial class AltHome
 
     private IEnumerable<int> GetVisiblePages()
     {
+        if (_currentFilter == Filter.SmoothRides)
+            return new[] { 1 };
+
         const int windowSize = 3; // How many pages to show before/after current
         var pages = new List<int>();
 
@@ -270,5 +275,50 @@ public partial class AltHome
         return $"{ts.Seconds} seconds ago";
     }
 
+    private async Task ShowSmoothRidesAsync()
+    {
+        _currentFilter = Filter.SmoothRides;
 
+        // Get 10 recent rides which have score higher than 90%
+        using var db = await _dbContextFactory.CreateDbContextAsync();
+        var rides = await db.Rides
+            .AsNoTracking()
+            .Where(x => x.SmoothnessScore > 90)
+            .OrderByDescending(x => x.Start)
+            .Take(10)
+            .ToArrayAsync();
+
+        if (rides.Length == 0)
+        {
+            // TODO: Display message that no rides found with high smoothness.
+            _logger.LogWarning("No rides found with high smoothness.");
+            return;
+        }
+
+        _totalPages = 1;
+        await ChangePage(1);
+        _displayedRides = rides;
+    }
+
+    private enum Filter
+    {
+        All,
+        SmoothRides
+    }
+
+    private async Task ShowAllRidesAsync()
+    {
+        _currentFilter = Filter.All;
+
+        // Restore state of the pagination element.
+        _totalPages = (int)Math.Ceiling((double)_totalCount / _pageSize);
+        await ChangePage(1);
+
+        _logger.LogDebug("Change Page to {0}", _currentPage);
+
+        var sw = Stopwatch.StartNew();
+        using var db = await _dbContextFactory.CreateDbContextAsync();
+        _displayedRides = await GetRidesPaged(db, _pageSize);
+        _logger.LogDebug("Took {0} ms to get data for page.", sw.ElapsedMilliseconds);
+    }
 }
