@@ -97,7 +97,7 @@
                                             <div class="d-flex align-items-center">
                                                 <div>
                                                     <div class="fw-bold text-white">@(ride.FullName)</div>
-                                                    <div class="text-muted small">@(ride.Start.ToString())</div>
+                                                    <time title="" datetime="@(ride.Start)" class="text-muted small">@(FormatTimeAgo(ride.Start))</time>
                                                 </div>
                                             </div>
                                         </td>

@@ -249,4 +249,26 @@ public partial class AltHome
         return pages;
     }
 
+    private string FormatTimeAgo(DateTime dt)
+    {
+        TimeSpan ts = DateTime.Now - dt;
+        if (ts.TotalDays > 1)
+        {
+            return $"{ts.Days} days ago";
+        }
+
+        if (ts.TotalHours > 1)
+        {
+            return $"{ts.Hours} hours ago";
+        }
+
+        if (ts.TotalMinutes > 1)
+        {
+            return $"{ts.Minutes} minutes ago";
+        }
+
+        return $"{ts.Seconds} seconds ago";
+    }
+
+
 }
