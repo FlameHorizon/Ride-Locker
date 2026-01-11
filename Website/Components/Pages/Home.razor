@@ -1,51 +1,199 @@
-﻿@page "/"
+@page "/"
 
 @rendermode InteractiveServer
 
-@using Website.Models
-@using Website.Components.Pieces
+@using Website.Services
 
-<PageTitle>Home</PageTitle>
+@inject UploadModalStateService UploadService
 
-<div class="content-inner position-relative m-auto">
-    <table class="table table-borderless table-striped">
-        <tbody>
-            @foreach (Ride ride in _pagedRides) 
-            {
-                <tr>
-                    <RideTableRow Ride="@ride" />
-                </tr>
-            }
-        </tbody>
-    </table>
+<div class="container-fluid py-2 bg-dark">
+    @* --- TOP METRICS BAR --- *@
+    <div class="row g-3 mb-4">
+        @* Smoothness Score *@
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small text-uppercase mb-1 fw-bold">Smoothness Score</p>
+                            <h2 class="fw-bold mb-0">@(_smoothnessScore.ToString("F2"))%</h2>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 4px;">
+                        <div class="progress-bar bg-success" style="width: @(_smoothnessScore)%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    @* FIX: width of the element seems to be entire page, which is not very nice *@
-    <nav aria-label="Ride pagination">
-        <ul class="pagination">
-            @* Previous Button *@
-            <li class="page-item @(_currentPage == 1 ? "disabled" : "")">
-                <button class="page-link" @onclick="() => ChangePage(_currentPage - 1)" 
-                        disabled="@(_currentPage == 1)">Previous</button>
-            </li>
+        @* Alert Count *@
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <p class="text-muted small text-uppercase mb-1 fw-bold">G-Force Alerts</p>
+                    <h2 class="fw-bold mb-0">@(_gForceAlerts)</h2>
+                    <p class="text-danger small mb-0 mt-2">
+                        <i class="bi bi-arrow-up-right"></i> @(_hardBrakingEvents) hard braking events
+                    </p>
+                </div>
+            </div>
+        </div>
 
-            @* Dynamic Page Numbers *@
-            @for (int i = 1; i <= _totalPages; i++)
-            {
-                var pageNumber = i; @* Local variable for the closure *@
-                <li class="page-item @(pageNumber == _currentPage ? "active" : "")">
-                    <button class="page-link" @onclick="() => ChangePage(pageNumber)">
-                        @pageNumber
+        @* Total Distance *@
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <p class="text-muted small text-uppercase mb-1 fw-bold">Total Analyzed</p>
+                    <h2 class="fw-bold mb-0">@(_totalDistanceAnalyzed.ToString("F2")) <small class="fs-6 text-muted">km</small></h2>
+                    <p class="text-muted small mb-0 mt-2">Across @(_totalCount) rides</p>
+                </div>
+            </div>
+        </div>
+
+        @* Upload Action Card *@
+        <div class="col-md-3">
+            <div class="card bg-primary text-white shadow-sm h-100 border-0">
+                <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                    <button class="btn btn-light fw-bold rounded-pill px-4"
+                        @onclick="UploadService.Open">
+                        <i class="bi bi-plus-lg me-1"></i> New Upload
                     </button>
-                </li>
-            }
+                    <small class="mt-2 opacity-75">Supports .GPX files</small>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            @* Next Button *@
-            <li class="page-item @(_currentPage == _totalPages ? "disabled" : "")">
-                <button class="page-link" @onclick="() => ChangePage(_currentPage + 1)" 
-                        disabled="@(_currentPage == _totalPages)">Next</button>
-            </li>
-        </ul>
-    </nav>
+    @* --- MAIN CONTENT AREA --- *@
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-gray border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">Recent Drive Analysis</h5>
+                    <div class="btn-group shadow-sm">
+
+                        <button class="btn btn-outline-secondary btn-sm @(SelectedFilter == "all" ? "active" : "")" 
+                            @onclick='() => ToggleFilter("all")'>
+                            All
+                        </button>
+
+                        <button class="btn btn-outline-secondary btn-sm @(SelectedFilter == "smooth" ? "active" : "")" 
+                            @onclick='() => ToggleFilter("smooth")'>
+                            High Smoothness
+                        </button>
+
+                        <button class="btn btn-outline-secondary btn-sm">Warnings</button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table align-middle table-hover mb-0">
+                            <thead class="bg-dark text-muted small uppercase">
+                                <tr>
+                                    <th class="ps-4">RIDE DETAILS</th>
+                                    <th>SMOOTHNESS</th>
+                                    <th>DISTANCE</th>
+                                    <th>AVG. SPEED</th>
+                                    <th class="text-center">ALERTS</th>
+                                    <th class="pe-4"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach(var ride in _displayedRides) 
+                                {
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="d-flex align-items-center">
+                                                <div>
+                                                    <div class="fw-bold text-white">@(ride.FullName)</div>
+                                                    <time title="" datetime="@(ride.Start)" class="text-muted small">@(FormatTimeAgo(ride.Start))</time>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td style="width: 200px;">
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress w-100 me-2" style="height: 8px; border-radius: 4px;">
+                                                    @{
+                                                        double smoothnessScore = ride.SmoothnessScore;
+                                                        if (smoothnessScore > 80.0d) 
+                                                        {
+                                                            <div class="progress-bar bg-success" style="width: @(smoothnessScore)%"></div>
+                                                        } 
+                                                        else 
+                                                        {
+                                                            <div class="progress-bar bg-warning" style="width: @(smoothnessScore)%"></div>
+                                                        }
+                                                    }
+                                                </div>
+                                                <span class="small fw-bold">@(smoothnessScore)%</span>
+                                            </div>
+                                        </td>
+                                        <td>@(ride.Distance.ToString("F2")) km</td>
+                                        <td>@((ride.AvgSpeed * 3.6).ToString("F0")) km/h</td>
+                                        <td class="text-center">
+                                        @{
+                                            int alertCount = ride.FastAccelerationCount + ride.FastDecelerationCount;
+                                            <span class="badge bg-dark text-white border">@alertCount</span>
+                                        }
+                                        </td>
+                                        <td class="pe-4 text-end">
+                                            <a class="btn btn-sm btn-outline-primary" href="@($"/ride-details/{ride.Id}")">Details</a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            @* 
+                FIX: This time, I have problem with hover effect.
+                When user prsses on button in pagination,
+                highlight color changes to blue, but hover effect (light gray)
+                is placed on adjacent button, different than what was clicked.
+            *@
+            <div class="card-footer bg-gray py-3">
+                <div class="d-flex justify-content-left align-items-center">
+                    <nav aria-label="Ride pagination">
+                        <ul class="pagination">
+                            
+                            @* Jump to First Page *@
+                            <li class="page-item @(_currentPage == 1 ? "disabled" : "")">
+                                <button type="button" 
+                                    class="page-link" 
+                                    @onclick="@(() => ChangePage(1))" 
+                                    disabled="@(_currentPage == 1)">
+                                    First
+                                </button>
+                            </li>
+
+                            @* Dynamic Sliding Window *@
+                            @foreach (var pageNumber in GetVisiblePages())
+                            {
+                                <li class="page-item @(pageNumber == _currentPage ? "active" : "")">
+                                    <button class="page-link" @onclick="() => ChangePage(pageNumber)">
+                                        @pageNumber
+                                    </button>
+                                </li>
+                            }
+
+                            @* Jump to Last Page *@
+                            <li class="page-item @(_currentPage == _totalPages ? "disabled" : "")">
+                                <button 
+                                    class="page-link" 
+                                    @onclick="() => ChangePage(_totalPages)"
+                                    disbaled="@(_currentPage == _totalPages)">
+                                    Last
+                                </button>
+                            </li>
+
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
