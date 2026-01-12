@@ -14,7 +14,7 @@ public class GpxToRideConvertionTests
         Gpx? gpx = serializer.Deserialize(stream) as Gpx;
         Ride ride = UploadModal.ConvertToRide(gpx!);
 
-        Assert.Equal(2, ride.FastAccelerationCount);
-        Assert.Equal(2, ride.FastAccelerationCount);
+        Assert.Equal(3, ride.FastAccelerationCount);
+        Assert.Equal(4, ride.FastDecelerationCount);
     }
 }

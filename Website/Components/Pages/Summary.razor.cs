@@ -1,25 +1,33 @@
-using Website.Models;
-using Website.Data;
 using System.Diagnostics;
-using System.Globalization;
+using Website.Data;
+using Website.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using System.Globalization;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Website.Components.Pages;
 
 public partial class Summary
 {
-    // REFAC: Maybe custom list would be better than built in?
-    // See: Issue #2.
-    public Ride[] Rides = [];
+    public Ride[] Rides { get; private set; } = [];
+    private readonly ILogger<Summary> _logger;
+    private readonly IMemoryCache _cache;
+    private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
 
-    // REFAC: Also use more concrete types instead of interfaces?
+    // Individual metrics
+    public double TotalDistance { get; set; }
+    public TimeSpan TotalDuration { get; set; }
+    public double AverageSpeed { get; set; }
+    public int FastAccelCount { get; set; }
+    public int FastDecelCount { get; set; }
+    public double ElevationGain { get; set; }
+    public double ElevationLoss { get; set; }
+
+    // Charts
     public IEnumerable<ChartData<string, double>> DistanceOverMonthsData = [];
     public IEnumerable<ChartData<string, double>> SpeedOverMonthsData = [];
     public IEnumerable<ChartData<double>> SpeedDistributionData = [];
-    private readonly ILogger<Summary> _logger;
-    private readonly IMemoryCache? _cache;
 
     public Summary()
     {
@@ -53,6 +61,16 @@ public partial class Summary
         SpeedDistributionData = CreateSpeedDistributionData(Rides);
     }
 
+    public Summary(
+        ILogger<Summary> logger,
+        IMemoryCache cache,
+        IDbContextFactory<AppDbContext> dbContextFactory)
+    {
+        _logger = logger;
+        _cache = cache;
+        _dbContextFactory = dbContextFactory;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         var sw = Stopwatch.StartNew();
@@ -66,7 +84,7 @@ public partial class Summary
                 async entry =>
                 {
                     entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-                    await using AppDbContext db = await DbContextFactory
+                    await using AppDbContext db = await _dbContextFactory
                         .CreateDbContextAsync();
 
                     return db.Rides
@@ -85,6 +103,19 @@ public partial class Summary
             Rides = result;
         }
 
+        // Once we have all rides, we can calculate metrics.
+        foreach (var ride in Rides)
+        {
+            TotalDistance += ride.Distance;
+            TotalDuration += ride.Duration;
+            FastAccelCount += ride.FastAccelerationCount;
+            FastDecelCount += ride.FastDecelerationCount;
+            ElevationGain += ride.ElevationGain;
+            ElevationLoss += ride.ElevationLoss;
+        }
+
+        AverageSpeed = Rides.Average(x => x.AvgSpeed) * 3.6;
+
         Console.WriteLine($"Took {sw.ElapsedMilliseconds} ms to query database.");
         sw.Restart();
 
@@ -92,67 +123,6 @@ public partial class Summary
         SpeedOverMonthsData = CreateSpeedOverMonthData(Rides);
         SpeedDistributionData = CreateSpeedDistributionData(Rides);
         Console.WriteLine($"Took {sw.ElapsedMilliseconds} ms to create data for charts");
-    }
-
-    // Unfortunately, there isn't an overload of Sum that accepts an
-    // IEnumerable<TimeSpan>. Additionally, there's no currently way of
-    // specifying operator-based generic constraints for type-parameters,
-    // so even though TimeSpan is "natively" summable, that fact can't be
-    // picked up easily by generic code.
-    private static TimeSpan SumDurations(Ride[] rides)
-    {
-        TimeSpan result = TimeSpan.Zero;
-        foreach (Ride ride in rides)
-        {
-            result += ride.Duration;
-        }
-        return result;
-    }
-
-    public static List<ChartData<string, double>> CreateDistanceOverMonthsData(
-      Ride[] rides)
-    {
-        if (rides.Length == 0) return [];
-
-        var result = new List<ChartData<string, double>>(24);
-        IFormatProvider formatProvider = CultureInfo.CurrentCulture;
-        foreach (Ride ride in rides)
-        {
-            if (ride.TrackPoints.Count == 0) continue;
-
-            int index = -1;
-
-            // Create a numeric key (YYYYMM). NO STRINGS YET.
-            int year = ride.Start.Year;
-            int month = ride.Start.Month;
-            int numericKey = (year * 100) + month;
-
-            // Serach for the label in data set.
-            for (int i = 0; i < result.Count; i++)
-            {
-                if (result[i].Tag == numericKey)
-                {
-                    index = i;
-                    break;
-                }
-            }
-
-            // If found, update distance value. Otherwise add new label.
-            if (index != -1) result[index].YValue += ride.Distance;
-            else
-            {
-                result.Add(new ChartData<string, double>()
-                {
-                    XValue = (year < 10 ? "0" : "") + year.ToString() + "-" + (month < 10 ? "0" : "") + month.ToString(),
-                    YValue = ride.Distance,
-                    Tag = numericKey
-                });
-            }
-        }
-
-        // Sort the end result by labels (XValue).
-        result.Sort((a, b) => a.Tag.CompareTo(b.Tag));
-        return result;
     }
 
     private static IEnumerable<ChartData<string, double>> CreateSpeedOverMonthData(
@@ -210,7 +180,6 @@ public partial class Summary
         result.Sort((a, b) => a.Tag.CompareTo(b.Tag));
         return result;
     }
-
     private static IEnumerable<ChartData<double>> CreateSpeedDistributionData(Ride[] rides)
     {
         List<ChartData<double>> res = [];
@@ -224,33 +193,51 @@ public partial class Summary
         return res;
     }
 
-    private string GetAverageTripDuration()
+
+    public static List<ChartData<string, double>> CreateDistanceOverMonthsData(
+      Ride[] rides)
     {
-        if (Rides.Length == 0)
+        if (rides.Length == 0) return [];
+
+        var result = new List<ChartData<string, double>>(24);
+        IFormatProvider formatProvider = CultureInfo.CurrentCulture;
+        foreach (Ride ride in rides)
         {
-            return "0 minutes";
+            if (ride.TrackPoints.Count == 0) continue;
+
+            int index = -1;
+
+            // Create a numeric key (YYYYMM). NO STRINGS YET.
+            int year = ride.Start.Year;
+            int month = ride.Start.Month;
+            int numericKey = (year * 100) + month;
+
+            // Serach for the label in data set.
+            for (int i = 0; i < result.Count; i++)
+            {
+                if (result[i].Tag == numericKey)
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            // If found, update distance value. Otherwise add new label.
+            if (index != -1) result[index].YValue += ride.Distance;
+            else
+            {
+                result.Add(new ChartData<string, double>()
+                {
+                    XValue = (year < 10 ? "0" : "") + year.ToString() + "-" + (month < 10 ? "0" : "") + month.ToString(),
+                    YValue = ride.Distance,
+                    Tag = numericKey
+                });
+            }
         }
 
-        return Math.Round(Rides.Average(x => x.Duration.TotalMinutes), 2) + " minutes";
+        // Sort the end result by labels (XValue).
+        result.Sort((a, b) => a.Tag.CompareTo(b.Tag));
+        return result;
     }
 
-    private string GetAverageSpeed()
-    {
-        if (Rides.Length == 0)
-        {
-            return "0 km/h";
-        }
-
-        return Math.Round(Rides.Average(x => x.AvgSpeed) * 3.6, 2) + " km/h";
-    }
-
-    private string GetMaxSpeed()
-    {
-        if (Rides.Length == 0)
-        {
-            return "0 km/h";
-        }
-
-        return Math.Round(Rides.Max(x => x.MaxSpeed) * 3.6, 2) + " km/h";
-    }
 }

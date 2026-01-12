@@ -1,154 +1,176 @@
 @page "/summary"
-
-@using Microsoft.EntityFrameworkCore
-@using Website.Data
-@using Website.Models
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @using Website.Components.Pieces
-@using System.Diagnostics
-
-@inject IDbContextFactory<AppDbContext> DbContextFactory
-
 @using ValueType = Syncfusion.Blazor.Charts.ValueType
 
-@* 
-  I think, I'm a bit too stupid yet to use pre-render pass effectively
-  so, I'm disabling it for now. More on pre-render pass for interactive components
-  https://learn.microsoft.com/en-us/aspnet/core/blazor/components/prerender?view=aspnetcore-10.0
+<div class="dashboard-container p-4">
+    <header class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Activity Summary</h1>
+            <p class="text-muted">Overview of your riding performance and GPX analytics.</p>
+        </div>
+    </header>
 
-  There is also documentation for peristance of state when doing pre-render pass
-  http
-*@
-@rendermode @(new InteractiveServerRenderMode(false))
+    @if (Rides == null) {
+        <div class="loader">Loading stats...</div>
+    } else {
+        <div class="row g-3 mb-4">
+            <KPIStat 
+                CardClass="border-left-primary" 
+                Icon="bi-bicycle" 
+                Title="Total Distance" 
+                Value="@($"{TotalDistance.ToString("F2")} km")" />
 
-<PageTitle>Summary</PageTitle>
+            <KPIStat 
+                CardClass="border-left-success" 
+                Icon="bi-clock-history" 
+                Title="Driving Time" 
+                Value="@TotalDuration.ToString(@"hh\:mm\:ss")" />
 
-<h2>Overall</h2>
+            <KPIStat 
+                CardClass="border-left-info" 
+                Icon="bi-graph-up" 
+                Title="Avg Speed" 
+                Value="@($"{AverageSpeed.ToString("F2")} km/h")" />
 
-@*
-  The main problem here is that every time I'm calculcating new metrics
-  all GPX files are read. This casues around 13 reads of 31 files each.
-*@
+            <KPIStat 
+                CardClass="border-left-warning" 
+                Icon="bi-exclamation-triangle" 
+                Title="Harsh Events" 
+                Value="@($"{FastAccelCount} / {FastDecelCount}")" />
+        </div>
 
-<div class="container">
-  <div class="row mb-2">
+        <div class="row g-4">
+            <div class="col-lg-4 just">
+                <div class="chart-card shadow-sm border-0 card h-100">
+                    <div class="card-header bg-gray py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Elevation Metrics</h6>
+                    </div>
+                    <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                        <div class="elevation-badge mb-3">
+                            <span class="display-5">@(ElevationGain.ToString("F0"))</span>
+                            <small>m Gain</small>
+                        </div>
+                        <div class="elevation-badge text-muted">
+                            <span class="h4">@(ElevationLoss.ToString("F0"))</span>
+                            <small>m Loss</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <RideDetailCard Title="Total distance" Text="@(Math.Round(Rides.Sum(x => x.Distance), 2) + " km")" />
+            @* FIX: X axis legend is missing*@
+            <div class="col-12">
+                <div class="chart-card shadow-sm border-0 card">
+                    <div class="card-header bg-gray ">
+                        <h6 class="m-0 font-weight-bold text-primary">Monthly Performance Trends</h6>
+                    </div>
+                    <div class="card-body">
+                        <SfChart Title="Speed distribution">
+                            <ChartArea>
+                                <ChartAreaBorder Width="0" />
+                            </ChartArea>
 
-    <RideDetailCard Title="Total driving time" Text="@(SumDurations(Rides).ToString())" />
+                            <ChartPrimaryXAxis Minimum="0">
+                                <ChartAxisMajorGridLines Width="0" />
+                            </ChartPrimaryXAxis>
 
-  </div>
+                            <ChartPrimaryYAxis Minimum="0" Title="Time (s)">
+                                <ChartAxisMajorGridLines Width="0" />
+                            </ChartPrimaryYAxis>
 
-  <div class="row mb-2">
+                            <ChartSeriesCollection>
+                                <ChartSeries DataSource="@SpeedDistributionData" 
+                                YName="XValue" 
+                                Type="ChartSeriesType.Histogram"
+                                BinInterval="10" 
+                                ColumnWidth="0.90">
 
-    <RideDetailCard Title="Average trip duration" Text="@GetAverageTripDuration()" />
+                                <ChartMarker Visible="false">
+                                    <ChartDataLabel Visible="true" />
+                                </ChartMarker>
 
-    <RideDetailCard Title="Elevation gain/loss (m)"
-      Text="@(Math.Round(Rides.Sum(x => x.ElevationGain), 2) + "/" + Math.Round(Rides.Sum(x => x.ElevationLoss), 2))" />
+                                </ChartSeries>
+                            </ChartSeriesCollection>
 
-  </div>
+                            <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+                        </SfChart>
+                    </div>
 
-  <div class="row mb-2">
+                    <div class="card-body">
+                        <SfChart Title="Distance over months">
+                            <ChartPrimaryXAxis Title="Year and month" ValueType="ValueType.Category" />
+                            <ChartPrimaryYAxis Title="Distance (km)" />
+                            <ChartTooltipSettings Enable="true" />
 
-    <RideDetailCard Title="Average speed" Text="@GetAverageSpeed()" />
-    <RideDetailCard Title="Max speed" Text="@GetMaxSpeed()" />
+                            <ChartSeriesCollection>
+                                <ChartSeries DataSource="@DistanceOverMonthsData" XName="XValue" YName="YValue"
+                                Type="ChartSeriesType.Column">
+                                <ChartSeriesAnimation Enable="false" Duration="0" />
+                                </ChartSeries>
+                            </ChartSeriesCollection>
+                        </SfChart>
+                    </div>
 
-  </div>
+
+                    <div class="card-body">
+                        <SfChart Title="Average speed over months">
+                            <ChartPrimaryXAxis Title="Year and month" ValueType="ValueType.Category" />
+                            <ChartPrimaryYAxis Title="Speed (km/h)" />
+                            <ChartTooltipSettings Enable="true" />
+
+                            <ChartSeriesCollection>
+                                <ChartSeries DataSource="@SpeedOverMonthsData" XName="XValue" YName="YValue"
+                                Type="ChartSeriesType.Column">
+                                <ChartSeriesAnimation Enable="false" Duration="0" />
+                                </ChartSeries>
+                            </ChartSeriesCollection>
+                        </SfChart>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
+<style>
+    /* Dark Mode Theme Variables */
+    :root {
+        --text-primary: #e3e6ed;   /* Off-white text */
+        --text-muted: #e3e6ed;     /* Dimmed text */
+        --border-color: rgba(255, 255, 255, 0.08);
+    }
 
-<h2>Advanced/Analytical Metrics</h2>
-<div class="container">
-  <div class="row mb-2">
+    .dashboard-container { 
+        color: var(--text-primary);
+        min-height: 100vh; 
+    }
 
-    <RideDetailCard Title="Harsh acceleration/breaking count"
-      Text="@(Rides.Sum(x => x.FastAccelerationCount) + "/" + Rides.Sum(x => x.FastDecelerationCount))" />
+    /* Override Bootstrap/Syncfusion card defaults */
+    .chart-card, .card { 
+        border: 1px solid var(--border-color) !important;
+        border-radius: 12px; 
+        transition: transform 0.2s; 
+        color: var(--text-primary) !important;
+    }
 
-  </div>
+    .card-header {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
 
-  <div class="row mb-2">
-    <div class="col-sm-12 mb-3 mb-sm-0">
-      <div class="card">
-        <div class="card-body">
-          <div style="height:400px">
-            <SfChart Title="Speed distribution">
-              <ChartArea>
-                <ChartAreaBorder Width="0" />
-              </ChartArea>
+    /* Accent Borders - Kept bright to pop against the dark background */
+    .border-left-primary { border-left: 0.25rem solid #4e73df !important; }
+    .border-left-success { border-left: 0.25rem solid #1cc88a !important; }
+    .border-left-info    { border-left: 0.25rem solid #36b9cc !important; }
+    .border-left-warning { border-left: 0.25rem solid #f6c23e !important; }
 
-              <ChartPrimaryXAxis Minimum="0">
-                <ChartAxisMajorGridLines Width="0" />
-              </ChartPrimaryXAxis>
+    /* Helper classes for the KPIStat component */
+    .text-gray-800 { color: var(--text-primary) !important; }
+    .text-gray-300 { color: var(--text-muted) !important; opacity: 0.5; }
 
-              <ChartPrimaryYAxis Minimum="0" Title="Time (s)">
-                <ChartAxisMajorGridLines Width="0" />
-              </ChartPrimaryYAxis>
-
-              <ChartSeriesCollection>
-                <ChartSeries DataSource="@SpeedDistributionData" 
-                  YName="XValue" 
-                  Type="ChartSeriesType.Histogram"
-                  BinInterval="10" 
-                  ColumnWidth="0.90">
-
-                  <ChartMarker Visible="false">
-                    <ChartDataLabel Visible="true" />
-                  </ChartMarker>
-
-                </ChartSeries>
-              </ChartSeriesCollection>
-
-              <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
-            </SfChart>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-  <div class="row mb-2">
-    <div class="col-sm-12 mb-3 mb-sm-0">
-      <div class="card">
-        <div class="card-body">
-          <div style="height:400px">
-            <SfChart Title="Distance over months">
-              <ChartPrimaryXAxis Title="Year and month" ValueType="ValueType.Category" />
-              <ChartPrimaryYAxis Title="Distance (km)" />
-              <ChartTooltipSettings Enable="true" />
-
-              <ChartSeriesCollection>
-                <ChartSeries DataSource="@DistanceOverMonthsData" XName="XValue" YName="YValue"
-                  Type="ChartSeriesType.Column">
-                  <ChartSeriesAnimation Enable="false" Duration="0" />
-                </ChartSeries>
-              </ChartSeriesCollection>
-            </SfChart>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row mb-2">
-    <div class="col-sm-12 mb-3 mb-sm-0">
-      <div class="card">
-        <div class="card-body">
-          <div style="height:400px">
-            <SfChart Title="Average speed over months">
-              <ChartPrimaryXAxis Title="Year and month" ValueType="ValueType.Category" />
-              <ChartPrimaryYAxis Title="Speed (km/h)" />
-              <ChartTooltipSettings Enable="true" />
-
-              <ChartSeriesCollection>
-                <ChartSeries DataSource="@SpeedOverMonthsData" XName="XValue" YName="YValue"
-                  Type="ChartSeriesType.Column">
-                  <ChartSeriesAnimation Enable="false" Duration="0" />
-                </ChartSeries>
-              </ChartSeriesCollection>
-            </SfChart>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+    .elevation-badge { text-align: center; }
+    .elevation-badge span { color: var(--text-primary); }
+    .elevation-badge small { color: var(--text-muted); }
+</style>

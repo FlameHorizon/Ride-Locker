@@ -64,6 +64,7 @@ public class SummaryTests
                         Longitude = 0.0
                     }
                 },
+                Distance = 111.19492664455873 * 2.0
             }
         };
 
@@ -92,6 +93,7 @@ public class SummaryTests
                         Longitude = 0.0
                     },
                 },
+                Distance = 111.19492664455873
             },
             new Ride {
                 TrackPoints = new List<TrackPoint> {
@@ -105,7 +107,8 @@ public class SummaryTests
                         Latitude = 3.0,
                         Longitude = 0.0
                     }
-                }
+                },
+                Distance = 111.19492664455873
             }
         };
 
@@ -136,6 +139,7 @@ public class SummaryTests
                 },
                 Start = DateTime.MinValue,
                 End = DateTime.MinValue,
+                Distance = 111.19492664455873
             },
             new Ride {
                 TrackPoints = new List<TrackPoint> {
@@ -152,6 +156,7 @@ public class SummaryTests
                 },
                 Start = DateTime.MinValue.AddMonths(1),
                 End = DateTime.MinValue.AddMonths(1),
+                Distance = 111.19492664455873
             }
         };
 
@@ -182,7 +187,8 @@ public class SummaryTests
                     },
                 },
                 Start = DateTime.MinValue,
-                End = DateTime.MinValue.AddHours(1)
+                End = DateTime.MinValue.AddHours(1),
+                Distance = 111.19492664455873
             },
             new Ride {
                 TrackPoints = new List<TrackPoint> {
@@ -196,7 +202,8 @@ public class SummaryTests
                     },
                 },
                 Start = DateTime.MinValue.AddMonths(1),
-                End = DateTime.MinValue.AddMonths(1).AddHours(1)
+                End = DateTime.MinValue.AddMonths(1).AddHours(1),
+                Distance = 111.19492664455873 * 2
             }
         };
 
